@@ -1,0 +1,2544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MER/DER Studio — Modelagem de Dados</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+:root,[data-theme="dark"]{
+  --bg:#0a0f1c;--bg2:#070c16;--panel:#0f1626;--panel2:#131c2e;--border:#1e2b45;
+  --border2:#2b3a55;--text:#e6edf7;--muted:#8b9bb4;--accent:#6366f1;--accent2:#818cf8;
+  --danger:#ef4444;--ok:#10b981;--warn:#f59e0b;
+  --grid-s:#111a2c;--grid-l:#182741;--ent-bg:#131c2e;--ent-row:#1e2b45;
+  --diamond:#182236;--rel-line:#5c6d88;--shadow:rgba(0,0,0,.6);
+}
+[data-theme="light"]{
+  --bg:#f3f5fa;--bg2:#fff;--panel:#fff;--panel2:#f8fafc;--border:#e2e8f0;
+  --border2:#cbd5e1;--text:#0f172a;--muted:#64748b;--accent:#6366f1;--accent2:#4f46e5;
+  --danger:#dc2626;--ok:#059669;--warn:#d97706;
+  --grid-s:#e8edf5;--grid-l:#d4dde9;--ent-bg:#fff;--ent-row:#e8edf5;
+  --diamond:#f1f5f9;--rel-line:#94a3b8;--shadow:rgba(15,23,42,.15);
+}
+body{font-family:Inter,'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{height:56px;display:flex;align-items:center;gap:5px;padding:0 12px;
+  background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;z-index:20}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;white-space:nowrap;margin-right:4px}
+.brand .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#6366f1,#0ea5e9);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.45)}
+.brand .logo svg{width:17px;height:17px}
+.brand small{color:var(--muted);font-weight:500;font-size:11px;margin-left:2px}
+.spacer{flex:1}
+.tb-group{display:flex;gap:5px;align-items:center}
+.divider{width:1px;height:26px;background:var(--border);margin:0 3px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:9px;
+  border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-size:12.5px;
+  font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap;user-select:none}
+.btn:hover{background:var(--border);border-color:var(--border2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(135deg,#6366f1,#4f46e5);border-color:#6366f1;color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.3)}
+.btn.primary:hover{background:linear-gradient(135deg,#7376f5,#5b52e8)}
+.btn.ghost{background:transparent}
+.btn.danger{background:rgba(239,68,68,.15);border-color:#5b2333;color:#fca5a5}
+.btn.danger:hover{background:rgba(239,68,68,.25)}
+.btn.accent{background:linear-gradient(135deg,#8b5cf6,#7c3aed);border-color:#8b5cf6;color:#fff}
+.btn.accent:hover{background:linear-gradient(135deg,#9b6ef8,#8b52f0)}
+.btn.icon{width:34px;padding:0;justify-content:center}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn:disabled:hover{background:var(--panel2);border-color:var(--border2)}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.main{flex:1;display:flex;min-height:0}
+.tools{width:58px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;z-index:5}
+.tool{width:42px;height:42px;border-radius:11px;border:1px solid transparent;background:transparent;
+  color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.15s;position:relative;font-family:inherit}
+.tool svg{width:19px;height:19px}
+.tool:hover{background:var(--border);color:var(--text)}
+.tool.active{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.4)}
+.tool .kbd{position:absolute;bottom:2px;right:5px;font-size:8px;color:rgba(255,255,255,.5);font-weight:800;pointer-events:none}
+.tool.active .kbd{color:rgba(255,255,255,.8)}
+.tools .sep{width:32px;height:1px;background:var(--border);margin:6px 0}
+.canvas-wrap{flex:1;position:relative;min-width:0;overflow:hidden;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block;touch-action:none;user-select:none}
+#canvas.tool-entity,#canvas.tool-rel,#canvas.tool-attrlink{cursor:crosshair}
+#canvas.panning{cursor:grabbing!important}
+.entity .body{stroke:var(--border2);stroke-width:1.4;transition:stroke .15s}
+.entity .body2{stroke:var(--border2);stroke-width:1.1;fill:none}
+.entity:hover .body{stroke:#3a4d6e}
+.entity.pending .body{stroke:#fbbf24;stroke-width:2}
+.entity.selected .body{stroke:#60a5fa;stroke-width:2}
+.entity.multi .body{stroke:#a855f7;stroke-width:1.8}
+.entity.weak .body{stroke-dasharray:4 3}
+.entity.assoc .body2{stroke-dasharray:3 3}
+.rel .hit{stroke:transparent;stroke-width:16;fill:none;cursor:pointer}
+.rel .line{stroke:var(--rel-line);stroke-width:1.6;fill:none;pointer-events:none;opacity:.5;transition:.15s}
+.rel:hover .line{stroke:#8798b3;opacity:.85}
+.rel.selected .line{stroke:#60a5fa;stroke-width:2.4;opacity:1}
+.rel.identifying .line{stroke-width:2}
+.attr-ref{cursor:pointer}
+.attr-ref .ref-hit{stroke:transparent;stroke-width:14;fill:none}
+.attr-ref .ref-line{fill:none;stroke-width:1.8;opacity:.85;transition:.15s;pointer-events:none}
+.attr-ref:hover .ref-line{stroke-width:2.6;opacity:1}
+.attr-ref.selected .ref-line{stroke-width:2.8;opacity:1}
+.attr-ref .ref-dot{transition:.15s}
+.attr-ref.highlight .ref-line{stroke-width:2.8;opacity:1;filter:drop-shadow(0 0 6px currentColor)}
+.hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--border2);padding:8px 16px;border-radius:22px;
+  font-size:12px;color:var(--text);backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap;
+  transition:.25s;opacity:0;box-shadow:0 8px 30px var(--shadow);font-weight:500;z-index:8}
+.hint.show{opacity:1}
+.canvas-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;
+  pointer-events:none;color:var(--muted);padding:20px;z-index:6}
+.canvas-empty h3{margin:0 0 8px;font-size:17px;color:var(--text);font-weight:600}
+.canvas-empty p{margin:0;font-size:13px;max-width:340px;line-height:1.6}
+.canvas-empty kbd{display:inline-block;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);font-size:11px;font-family:inherit;font-weight:600;margin:0 1px}
+.canvas-empty[hidden]{display:none}
+.canvas-empty .cta{margin-top:16px;display:flex;gap:8px;justify-content:center;pointer-events:auto}
+.canvas-toolbar{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:7;pointer-events:auto}
+.canvas-toolbar .sbtn{height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--border2);
+  background:var(--panel);color:var(--muted);cursor:pointer;font-size:11px;font-family:inherit;
+  font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 8px var(--shadow)}
+.canvas-toolbar .sbtn:hover{color:var(--text);background:var(--border)}
+.canvas-toolbar .sbtn.on{background:rgba(99,102,241,.2);color:#a5b4fc;border-color:#6366f1}
+.props{width:360px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);
+  overflow-y:auto;padding:16px;font-size:12.5px;z-index:10}
+.props::-webkit-scrollbar{width:9px}
+.props::-webkit-scrollbar-thumb{background:var(--border2);border-radius:9px;border:2px solid var(--panel)}
+.props::-webkit-scrollbar-track{background:transparent}
+.ph h3{margin:0 0 10px;font-size:14px;font-weight:600}
+.ph p{color:var(--muted);line-height:1.65;margin:0 0 14px;font-size:12px}
+.ph .tips{list-style:none;padding:0;margin:0;color:var(--muted);line-height:2;font-size:11.5px}
+.ph .tips li::before{content:"→ ";color:var(--accent2);font-weight:700}
+.ph .tips b{color:var(--text);font-weight:600}
+.ph .tips kbd{display:inline-block;padding:1px 6px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);font-size:10.5px;font-family:inherit;font-weight:700}
+.ph-head{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.ph-head h3{margin:0;font-size:14px;font-weight:600}
+.ph-head .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.fld{display:block;margin-bottom:12px}
+.fld>span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--muted);font-weight:700;margin-bottom:6px}
+.fld input:not([type=color]),.fld select,.fld textarea{width:100%;border-radius:9px;
+  border:1px solid var(--border2);background:var(--panel2);color:var(--text);padding:9px 11px;
+  font-size:12.5px;font-family:inherit;outline:none;transition:.15s;resize:vertical}
+.fld input{height:36px}
+.fld textarea{min-height:56px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
+.fld input[type=color]{width:100%;height:36px;padding:4px;cursor:pointer}
+.fld select{cursor:pointer;appearance:none;padding-right:32px;height:36px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 15px,calc(100% - 11px) 15px;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.sec-head{display:flex;align-items:center;justify-content:space-between;
+  margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)}
+.sec-head>span{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.mini{height:26px;padding:0 10px;border-radius:7px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--accent2);font-size:11px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:.15s}
+.mini:hover{background:var(--border);color:#a5b4fc}
+.attr-row{display:grid;grid-template-columns:1fr 92px;gap:5px;background:var(--panel2);
+  border:1px solid var(--border);border-radius:10px;padding:7px;margin-bottom:7px}
+.attr-row.has-refs{border-color:rgba(56,189,248,.55);background:rgba(56,189,248,.05)}
+.attr-row .a-input{height:30px;border-radius:7px;border:1px solid transparent;background:var(--ent-bg);
+  color:var(--text);padding:0 8px;font-size:11.5px;font-family:inherit;outline:none;width:100%;transition:.15s;min-width:0}
+.attr-row .a-input:focus{border-color:var(--accent)}
+.attr-row .flags{grid-column:1/-1;display:flex;gap:3px;margin-top:2px;flex-wrap:wrap}
+.flag{height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);font-size:9.5px;font-weight:800;cursor:pointer;
+  font-family:inherit;letter-spacing:.4px;transition:.15s}
+.flag:hover{border-color:var(--border2);color:var(--text)}
+.flag.on{color:#0b1020}
+.flag.on.pk{background:#fbbf24;border-color:#fbbf24}
+.flag.on.fk{background:#38bdf8;border-color:#38bdf8}
+.flag.on.nn{background:#a78bfa;border-color:#a78bfa}
+.flag.on.uq{background:#34d399;border-color:#34d399}
+.flag.ref-add{padding:0 7px;color:#38bdf8;border-color:rgba(56,189,248,.5);margin-left:auto}
+.flag.ref-add:hover{background:rgba(56,189,248,.15);color:#7dd3fc}
+.flag.del-attr{padding:0 9px;color:#fca5a5;border-color:#5b2333}
+.flag.del-attr:hover{background:rgba(239,68,68,.2);color:#fca5a5}
+.attr-refs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-top:6px;border-top:1px dashed var(--border2)}
+.ref-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 5px 2px 8px;
+  border-radius:6px;background:rgba(56,189,248,.12);color:#7dd3fc;
+  font-size:10px;font-weight:700;letter-spacing:.2px;cursor:pointer;transition:.15s}
+.ref-chip:hover{background:rgba(56,189,248,.25)}
+.ref-chip .ref-del{background:none;border:none;color:#7dd3fc;cursor:pointer;font-size:12px;
+  padding:0 2px;line-height:1;font-family:inherit;opacity:.7}
+.ref-chip .ref-del:hover{color:#fca5a5;opacity:1}
+.rel-list{display:flex;flex-direction:column;gap:6px}
+.rel-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;
+  background:var(--panel2);border:1px solid var(--border);cursor:pointer;transition:.15s;font-size:11.5px}
+.rel-item:hover{border-color:var(--accent);background:var(--border)}
+.rel-item .arrow{color:var(--muted);font-weight:700}
+.rel-item .name{color:var(--text);font-weight:600}
+.rel-item .card{color:#fbbf24;font-weight:800;font-size:10.5px;padding:1px 5px;background:rgba(251,191,36,.12);border-radius:4px}
+.rel-item .id-badge{font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(139,92,246,.2);color:#c4b5fd;font-weight:700}
+.rel-item .relname{color:var(--muted);font-style:italic;margin-left:auto;font-size:10.5px}
+.row-btns{display:flex;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.row-btns .btn{flex:1;justify-content:center}
+.empty{color:var(--muted);font-size:11.5px;padding:14px;text-align:center;
+  border:1px dashed var(--border2);border-radius:10px;line-height:1.5}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;height:36px;border-radius:9px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);padding:0 11px 0 34px;font-size:12.5px;font-family:inherit;outline:none;transition:.15s}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted);pointer-events:none}
+.search-list{max-height:280px;overflow-y:auto;margin-bottom:16px}
+.search-list::-webkit-scrollbar{width:6px}
+.search-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:6px}
+.search-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:.12s;font-size:12px;color:var(--text)}
+.search-item:hover{background:var(--border)}
+.search-item .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.search-item .meta{margin-left:auto;font-size:10.5px;color:var(--muted)}
+.statusbar{height:34px;flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;padding:0 14px;font-size:11.5px;color:var(--muted);font-weight:500}
+.statusbar .sep{flex:1}
+.statusbar .stat{display:flex;align-items:center;gap:5px}
+.statusbar .stat .dot{width:6px;height:6px;border-radius:50%}
+.zoom-ctrl{display:flex;align-items:center;gap:3px}
+.zbtn{width:26px;height:24px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);
+  color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;display:grid;place-items:center;transition:.15s;line-height:1}
+.zbtn:hover{background:var(--border);color:var(--text)}
+.zval{min-width:46px;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.modal{position:fixed;inset:0;background:rgba(5,8,16,.8);backdrop-filter:blur(6px);
+  display:grid;place-items:center;z-index:100;padding:20px}
+.modal[hidden]{display:none}
+.modal-box{width:min(780px,100%);max-height:88vh;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--border2);border-radius:16px;overflow:hidden;
+  box-shadow:0 30px 80px var(--shadow)}
+.modal-box.wide{width:min(1120px,100%)}
+.modal-box.narrow{width:min(520px,100%)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;
+  border-bottom:1px solid var(--border)}
+.modal-head h3{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.modal-head h3 .badge{font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(99,102,241,.2);color:#a5b4fc;font-weight:700}
+.modal-head button{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;
+  padding:5px 10px;border-radius:7px;font-family:inherit;line-height:1;transition:.15s}
+.modal-head button:hover{background:var(--border);color:var(--text)}
+.modal-body{flex:1;overflow:auto;padding:16px 20px}
+.modal-body::-webkit-scrollbar{width:9px}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:9px}
+.modal-body textarea{width:100%;min-height:340px;resize:none;border-radius:11px;
+  border:1px solid var(--border2);background:var(--bg2);color:#a5f3d0;
+  font-family:'JetBrains Mono','Fira Code',ui-monospace,Consolas,monospace;font-size:12.5px;
+  line-height:1.7;padding:16px;outline:none}
+.modal-body textarea:focus{border-color:var(--accent)}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border)}
+.tpl-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.tpl-search{flex:1;min-width:200px;position:relative}
+.tpl-search input{width:100%;height:32px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);padding:0 11px 0 34px;font-size:12.5px;font-family:inherit;outline:none}
+.tpl-search input:focus{border-color:var(--accent)}
+.tpl-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted)}
+.tpl-cat{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--muted);cursor:pointer;font-size:11.5px;font-family:inherit;
+  font-weight:600;transition:.15s}
+.tpl-cat:hover{background:var(--border);color:var(--text)}
+.tpl-cat.active{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border-color:#6366f1}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tpl-card{background:var(--panel2);border:1px solid var(--border);border-radius:13px;padding:14px;
+  cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.tpl-card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(99,102,241,.09),transparent 70%);pointer-events:none}
+.tpl-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 12px 30px var(--shadow)}
+.tpl-card .fav-btn{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:7px;
+  background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;
+  display:grid;place-items:center;transition:.15s;z-index:2}
+.tpl-card .fav-btn:hover{background:var(--border);color:#fbbf24}
+.tpl-card .fav-btn.on{color:#fbbf24}
+.tpl-head{display:flex;align-items:center;gap:10px;padding-right:28px}
+.tpl-icon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
+  font-size:20px;background:var(--ent-bg);border:1px solid var(--border2);transition:.2s}
+.tpl-title{font-size:13.5px;font-weight:600;line-height:1.2}
+.tpl-sub{font-size:10.5px;color:var(--muted);margin-top:2px;font-weight:500}
+.tpl-desc{font-size:11.5px;color:var(--muted);line-height:1.5;flex:1}
+.tpl-stats{display:flex;gap:10px;font-size:10.5px;color:var(--muted);font-weight:600;flex-wrap:wrap}
+.tpl-stats b{color:var(--accent2)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.info-cell{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.info-cell .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:6px}
+.info-cell .val{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.info-cell .val small{font-size:12px;color:var(--muted);font-weight:500;margin-left:4px}
+.stat-list{margin-top:16px}
+.stat-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--panel2);
+  border:1px solid var(--border);border-radius:9px;margin-bottom:6px;font-size:12px}
+.stat-row .bar{flex:1;height:6px;background:var(--border);border-radius:4px;overflow:hidden}
+.stat-row .bar>div{height:100%;background:linear-gradient(90deg,#6366f1,#0ea5e9);border-radius:4px}
+.stat-row .num{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;min-width:24px;text-align:right}
+.stat-row .lbl{color:var(--muted);font-weight:600}
+.help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.help-sec h4{margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--accent2)}
+.help-sec ul{list-style:none;padding:0;margin:0;font-size:12.5px;line-height:2.1}
+.help-sec li{display:flex;align-items:center;gap:10px}
+.help-sec kbd{display:inline-block;min-width:24px;text-align:center;padding:2px 8px;border-radius:6px;
+  border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-size:11px;
+  font-family:inherit;font-weight:700}
+.help-sec span{color:var(--muted)}
+.toast{position:fixed;bottom:80px;right:24px;background:var(--panel);border:1px solid var(--border2);
+  padding:11px 16px;border-radius:11px;font-size:12.5px;color:var(--text);font-weight:500;
+  box-shadow:0 12px 40px var(--shadow);z-index:200;opacity:0;transform:translateY(10px);
+  transition:.25s;pointer-events:none;display:flex;align-items:center;gap:8px;max-width:340px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast .ico{font-size:16px}
+@media (max-width:1100px){.topbar .btn .lbl{display:none}.brand small{display:none}}
+@media (max-width:900px){.props{position:absolute;right:0;top:56px;bottom:34px;z-index:15;
+  box-shadow:-16px 0 46px var(--shadow);width:320px}}
+@media (max-width:640px){.props{width:100%;top:auto;bottom:34px;height:55vh;border-left:none;
+  border-top:1px solid var(--border);border-radius:16px 16px 0 0}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/></svg></div>MER/DER <small>Studio</small></div>
+  <div class="divider"></div>
+  <div class="tb-group">
+    <button class="btn accent" id="btn-templates" title="Biblioteca de modelos (Ctrl+P)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">Modelos</span></button>
+    <button class="btn ghost" id="btn-new" title="Novo modelo (Ctrl+N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="lbl">Novo</span></button>
+    <button class="btn ghost" id="btn-import" title="Abrir JSON (Ctrl+O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span class="lbl">Abrir</span></button>
+    <button class="btn ghost" id="btn-export" title="Salvar JSON (Ctrl+S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span class="lbl">Salvar</span></button>
+  </div>
+  <div class="divider"></div>
+  <div class="tb-group">
+    <button class="btn ghost icon" id="btn-undo" title="Desfazer (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>
+    <button class="btn ghost icon" id="btn-redo" title="Refazer (Ctrl+Y)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></svg></button>
+    <button class="btn ghost icon" id="btn-copy" title="Copiar (Ctrl+C)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+    <button class="btn ghost icon" id="btn-paste" title="Colar (Ctrl+V)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></button>
+  </div>
+  <div class="divider"></div>
+  <div class="tb-group">
+    <button class="btn ghost icon" id="btn-layout" title="Organizar automaticamente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+    <button class="btn ghost icon" id="btn-stats" title="Estatísticas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></button>
+    <button class="btn ghost icon" id="btn-info" title="Informações do modelo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+    <button class="btn ghost icon" id="btn-theme" title="Alternar tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+    <button class="btn ghost icon" id="btn-help" title="Atalhos (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+  </div>
+  <div class="spacer"></div>
+  <div class="tb-group">
+    <button class="btn ghost" id="btn-mermaid" title="Exportar Mermaid">🧜 <span class="lbl">Mermaid</span></button>
+    <button class="btn ghost" id="btn-dbml" title="Exportar DBML">📐 <span class="lbl">DBML</span></button>
+    <button class="btn ghost" id="btn-svg" title="Exportar SVG">🖼️ <span class="lbl">SVG</span></button>
+    <button class="btn ghost" id="btn-png" title="Exportar PNG">📷 <span class="lbl">PNG</span></button>
+    <button class="btn primary" id="btn-sql" title="Gerar script SQL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>Gerar SQL</button>
+  </div>
+</header>
+<div class="main">
+  <aside class="tools">
+    <button class="tool active" data-tool="select" title="Selecionar / Mover (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg><span class="kbd">V</span></button>
+    <button class="tool" data-tool="entity" title="Adicionar Entidade (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="16" y2="15"/></svg><span class="kbd">E</span></button>
+    <button class="tool" data-tool="rel" title="Relacionamento (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/></svg><span class="kbd">R</span></button>
+    <button class="tool" data-tool="attrlink" title="Vincular Atributos (A) — clique atributo origem, depois destino"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="kbd">A</span></button>
+    <div class="sep"></div>
+    <button class="tool" id="tool-fit" title="Ajustar à tela (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+    <button class="tool" id="tool-zoom-sel" title="Zoom na seleção (Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+  </aside>
+  <div class="canvas-wrap">
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="gridSmall" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0 L0 0 0 20" fill="none" stroke="var(--grid-s)" stroke-width="1"/></pattern>
+        <pattern id="gridLarge" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0 L0 0 0 100" fill="none" stroke="var(--grid-l)" stroke-width="1"/></pattern>
+        <marker id="arrow-marker" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+      <rect id="bg-sm" width="100%" height="100%" fill="url(#gridSmall)"/>
+      <rect id="bg-lg" width="100%" height="100%" fill="url(#gridLarge)"/>
+      <g id="viewport">
+        <g id="relLayer"></g>
+        <g id="content"></g>
+        <g id="attrRefLayer"></g>
+        <g id="overlay" style="pointer-events:none"></g>
+      </g>
+    </svg>
+    <div class="canvas-toolbar">
+      <button class="sbtn on" id="sbtn-grid"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg> Grade</button>
+      <button class="sbtn" id="sbtn-snap"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z"/></svg> Encaixe</button>
+      <button class="sbtn on" id="sbtn-attrref" title="Mostrar linhas de atributos"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Atributos</button>
+    </div>
+    <div class="canvas-empty" id="canvas-empty" hidden>
+      <h3>Seu diagrama está vazio</h3>
+      <p>Comece escolhendo um dos nossos modelos prontos ou crie uma entidade do zero.</p>
+      <div class="cta"><button class="btn accent" id="empty-templates">📚 Ver modelos</button><button class="btn ghost" id="empty-entity">+ Nova entidade</button></div>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+  <aside class="props" id="props"></aside>
+</div>
+<footer class="statusbar">
+  <span class="stat"><span class="dot" style="background:#6366f1"></span><span id="st-entities">0 entidades</span></span>
+  <span class="stat"><span class="dot" style="background:#38bdf8"></span><span id="st-refs">0 vínculos</span></span>
+  <span class="stat"><span class="dot" style="background:#34d399"></span><span id="st-attrs">0 atributos</span></span>
+  <span class="sep"></span>
+  <span id="st-tool">Selecionar</span>
+  <div class="zoom-ctrl">
+    <button class="zbtn" id="z-out" title="Diminuir">−</button>
+    <span class="zval" id="z-val">100%</span>
+    <button class="zbtn" id="z-in" title="Aumentar">+</button>
+    <button class="zbtn" id="z-reset">⟲</button>
+  </div>
+</footer>
+</div>
+
+<!-- REFERENCE PICKER -->
+<div class="modal" id="ref-modal" hidden>
+  <div class="modal-box narrow">
+    <div class="modal-head"><h3>🔗 Vincular Atributo</h3><button id="ref-close">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:12px;margin:0 0 16px;line-height:1.6" id="ref-source-info"></p>
+      <label class="fld"><span>Entidade destino</span><select id="ref-entity"></select></label>
+      <label class="fld"><span>Atributo destino</span><select id="ref-attr"></select></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="ref-cancel">Cancelar</button>
+      <button class="btn primary" id="ref-add">Adicionar vínculo</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES -->
+<div class="modal" id="tpl-modal" hidden>
+  <div class="modal-box wide">
+    <div class="modal-head"><h3>📚 Biblioteca de Modelos <span class="badge" id="tpl-count">0</span></h3><button id="tpl-close">✕</button></div>
+    <div class="modal-body">
+      <div class="tpl-toolbar">
+        <div class="tpl-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="tpl-search-input" placeholder="Buscar modelo..." spellcheck="false">
+        </div>
+      </div>
+      <div class="tpl-toolbar" id="tpl-cats"></div>
+      <div class="tpl-grid" id="tpl-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SQL -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="modal-title">Script SQL</h3><button id="modal-close">✕</button></div>
+    <div class="modal-body" style="padding-top:12px">
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="dialect-bar"></div>
+      <textarea id="modal-text" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" id="modal-copy">📋 Copiar</button><button class="btn primary" id="modal-dl">⬇ Baixar</button></div>
+  </div>
+</div>
+
+<!-- INFO -->
+<div class="modal" id="info-modal" hidden>
+  <div class="modal-box narrow">
+    <div class="modal-head"><h3>📋 Informações do Modelo</h3><button id="info-close">✕</button></div>
+    <div class="modal-body">
+      <label class="fld"><span>Nome do diagrama</span><input id="info-name" type="text" placeholder="Meu modelo"></label>
+      <label class="fld"><span>Autor</span><input id="info-author" type="text" placeholder="Seu nome"></label>
+      <label class="fld"><span>Descrição</span><textarea id="info-desc" placeholder="Breve descrição..."></textarea></label>
+    </div>
+    <div class="modal-foot"><button class="btn primary" id="info-save">Salvar</button></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="modal" id="stats-modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3>📊 Estatísticas</h3><button id="stats-close">✕</button></div>
+    <div class="modal-body" id="stats-body"></div>
+  </div>
+</div>
+
+<!-- HELP -->
+<div class="modal" id="help-modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3>⌨️ Atalhos</h3><button id="help-close">✕</button></div>
+    <div class="modal-body">
+      <div class="help-grid">
+        <div class="help-sec"><h4>Ferramentas</h4><ul>
+          <li><kbd>V</kbd><span>Selecionar / Mover</span></li>
+          <li><kbd>E</kbd><span>Adicionar entidade</span></li>
+          <li><kbd>R</kbd><span>Adicionar relacionamento</span></li>
+          <li><kbd>A</kbd><span>Vincular atributos</span></li>
+          <li><kbd>F</kbd><span>Ajustar à tela</span></li>
+          <li><kbd>Z</kbd><span>Zoom na seleção</span></li>
+          <li><kbd>G</kbd><span>Grade on/off</span></li>
+        </ul></div>
+        <div class="help-sec"><h4>Vínculo de Atributos</h4><ul>
+          <li><kbd>+🔗</kbd><span>Adicionar vínculo pela aba de atributos</span></li>
+          <li><kbd>A</kbd><span>Clique atributo origem, depois destino</span></li>
+          <li><kbd>×</kbd><span>Remover vínculo (no chip do atributo)</span></li>
+          <li><kbd>Shift</kbd>+<kbd>clique</kbd><span>Seleção múltipla de entidades</span></li>
+        </ul></div>
+        <div class="help-sec"><h4>Edição</h4><ul>
+          <li><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd>/<kbd>D</kbd><span>Copiar/Colar/Duplicar</span></li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd><span>Desfazer/Refazer</span></li>
+          <li><kbd>Del</kbd><span>Remover</span></li>
+          <li><kbd>Esc</kbd><span>Cancelar / desselecionar</span></li>
+        </ul></div>
+        <div class="help-sec"><h4>Navegação</h4><ul>
+          <li><kbd>Scroll</kbd><span>Zoom</span></li>
+          <li><kbd>Alt</kbd>+<kbd>arrastar</kbd><span>Mover tela</span></li>
+          <li><kbd>Shift</kbd>+<kbd>arrastar</kbd><span>Encaixar grade</span></li>
+          <li><kbd>Ctrl</kbd>+<kbd>P</kbd><span>Modelos</span></li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ico">✓</span><span id="toast-msg"></span></div>
+<input type="file" id="file-input" accept=".json,application/json" hidden>
+<datalist id="tipos">
+  <option value="INT"></option><option value="BIGINT"></option><option value="SMALLINT"></option>
+  <option value="VARCHAR(50)"></option><option value="VARCHAR(100)"></option>
+  <option value="VARCHAR(255)"></option><option value="TEXT"></option><option value="CHAR(1)"></option>
+  <option value="DATE"></option><option value="TIME"></option><option value="DATETIME"></option>
+  <option value="TIMESTAMP"></option><option value="DECIMAL(10,2)"></option><option value="FLOAT"></option>
+  <option value="DOUBLE"></option><option value="BOOLEAN"></option><option value="BLOB"></option>
+  <option value="JSON"></option><option value="UUID"></option>
+</datalist>
+
+<script>
+'use strict';
+/* ============================================================
+   MER/DER STUDIO v6 — Attribute-level references with multi-line routing
+   ============================================================ */
+const FONT = `Inter, 'Segoe UI', system-ui, -apple-system, sans-serif`;
+const HEADER_H = 32, ROW_H = 24, MIN_W = 172, BADGE_W = 16, HEADER_R = 10;
+const PALETTE = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#f97316','#8b5cf6'];
+const CARDS = ['1','N','0..1','0..N','1..N'];
+const ENT_TYPES = [{id:'strong',label:'Forte'},{id:'weak',label:'Fraca'},{id:'assoc',label:'Associativa'}];
+const REL_TYPES = [{id:'non-identifying',label:'Não identificador'},{id:'identifying',label:'Identificador'}];
+
+const state = { info:{name:'',author:'',description:''}, entities:[], rels:[] };
+const view = { x:0, y:0, k:1 };
+let selection = null;
+let multiSel = new Set();
+let tool = 'select';
+let pendingRelFrom = null;
+let pendingAttrFrom = null;
+let drag = null, pan = null;
+let undoStack = [], redoStack = [];
+let spaceDown = false, mouseWorld = null;
+let clipboard = null;
+let showGrid = true, snapToGrid = false, showAttrRefs = true;
+let currentDialect = 'mysql';
+let currentTplCat = 'todos';
+let tplSearch = '';
+let tplFavs = new Set();
+let theme = 'dark';
+let pickerState = null;
+
+const svg = document.getElementById('canvas');
+const gridSm = document.getElementById('gridSmall');
+const gridLg = document.getElementById('gridLarge');
+const viewport = document.getElementById('viewport');
+const relLayer = document.getElementById('relLayer');
+const contentG = document.getElementById('content');
+const attrRefLayer = document.getElementById('attrRefLayer');
+const overlayG = document.getElementById('overlay');
+const propsEl = document.getElementById('props');
+const hintEl = document.getElementById('hint');
+const emptyEl = document.getElementById('canvas-empty');
+const toastEl = document.getElementById('toast');
+
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const getEnt = id => state.entities.find(e => e.id === id);
+const getRel = id => state.rels.find(r => r.id === id);
+const isMany = c => /n/i.test(c || '');
+const _mc = document.createElement('canvas').getContext('2d');
+const tw = (text, font) => { _mc.font = font; return _mc.measureText(text || '').width; };
+const relsOfEntity = id => state.rels.filter(r => r.from === id || r.to === id);
+const refsOfAttr = a => (a.refs || []);
+const countRefs = () => state.entities.reduce((s,e) => s + e.attrs.reduce((x,a) => x + ((a.refs||[]).length), 0), 0);
+
+function toast(msg, icon){ 
+  toastEl.querySelector('.ico').textContent = icon || '✓';
+  document.getElementById('toast-msg').textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+/* ============================================================
+   TEMPLATE BUILDER
+   ============================================================ */
+function T(entities, refsList){
+  const ids = entities.map(() => uid());
+  const builtEntities = entities.map((e, i) => ({
+    id: ids[i], name: e.n, x: e.x, y: e.y, color: e.c,
+    type: e.t || 'strong', note: e.not || '',
+    attrs: e.a.map(a => ({
+      id: uid(), name: a[0], type: a[1],
+      pk: /pk/.test(a[2]||''), fk: /fk/.test(a[2]||''), nn: /nn/.test(a[2]||''), uq: /uq/.test(a[2]||''),
+      refs: []
+    }))
+  }));
+  // refsList format: [ [srcEntityIdx, srcAttrName, tgtEntityIdx, tgtAttrName, relName?, cardSrc?, cardTgt?], ... ]
+  const builtRels = [];
+  const relMap = new Map(); // key: from|to -> rel
+  for (const r of refsList){
+    const [si, sa, ti, ta] = r;
+    const src = builtEntities[si], tgt = builtEntities[ti];
+    if (!src || !tgt) continue;
+    const saAttr = src.attrs.find(a => a.name === sa);
+    const taAttr = tgt.attrs.find(a => a.name === ta);
+    if (!saAttr || !taAttr) continue;
+    if (!saAttr.refs) saAttr.refs = [];
+    saAttr.refs.push({ entityId: tgt.id, attrId: taAttr.id });
+    if (!saAttr.fk) saAttr.fk = true;
+    // ensure a rel exists between src & tgt
+    const key = `${src.id}|${tgt.id}`;
+    const keyRev = `${tgt.id}|${src.id}`;
+    if (!relMap.has(key) && !relMap.has(keyRev)){
+      const rel = { id: uid(), name: r[4] || 'relaciona', from: src.id, to: tgt.id,
+                    cardFrom: r[5] || '1', cardTo: r[6] || 'N', type: r[7] || 'non-identifying' };
+      relMap.set(key, rel);
+      builtRels.push(rel);
+    }
+  }
+  return { entities: builtEntities, rels: builtRels };
+}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+const TEMPLATES = [
+  { id:'barbearia', name:'Barbearia', icon:'✂️', cat:'servicos',
+    desc:'Clientes, endereços, serviços, profissionais, horários e agendamentos — com uma linha por atributo.',
+    build: () => T([
+      { n:'endereco', x:40, y:40, c:'#10b981', a:[
+        ['id','INT','pk nn'],['logradouro','VARCHAR(150)','nn'],['cidade','VARCHAR(80)','nn'],['uf','CHAR(2)','nn'],['cep','VARCHAR(10)','nn'] ]},
+      { n:'cliente', x:40, y:300, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['email','VARCHAR(255)','uq'],['endereco_id','INT','fk nn'] ]},
+      { n:'servico', x:420, y:40, c:'#10b981', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['duracao_min','INT','nn'] ]},
+      { n:'profissional', x:820, y:40, c:'#a855f7', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['registro','VARCHAR(30)','uq'] ]},
+      { n:'profissional_servico', x:420, y:300, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['profissional_id','INT','fk nn'],['servico_id','INT','fk nn'],['preco','DECIMAL(10,2)','nn'] ]},
+      { n:'horario_atendimento', x:820, y:300, c:'#a855f7', a:[
+        ['id','INT','pk nn'],['dia_semana','VARCHAR(20)','nn'],['inicio','TIME','nn'],['fim','TIME','nn'],['profissional_id','INT','fk nn'] ]},
+      { n:'agendamento', x:420, y:580, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['data','DATE','nn'],['hora','TIME','nn'],
+        ['cliente_id','INT','fk nn'],['servico_id','INT','fk nn'],['profissional_id','INT','fk nn'] ]}
+    ], [
+      [1,'endereco_id',0,'id','possui'],
+      [4,'servico_id',2,'id','presta'],
+      [4,'profissional_id',3,'id','executa'],
+      [5,'profissional_id',3,'id','define'],
+      [6,'cliente_id',1,'id','solicita'],
+      [6,'servico_id',2,'id','agenda'],
+      [6,'profissional_id',3,'id','atende']
+    ])
+  },
+  { id:'ecommerce', name:'E-commerce', icon:'🛒', cat:'negocios',
+    desc:'Clientes, pedidos, itens, produtos e categorias com vínculos por atributo.',
+    build: () => T([
+      { n:'Cliente', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['email','VARCHAR(255)','nn uq'],['endereco_id','INT','fk'] ]},
+      { n:'Endereco', x:40, y:340, c:'#14b8a6', a:[
+        ['id','INT','pk nn'],['logradouro','VARCHAR(150)','nn'],['cidade','VARCHAR(80)','nn'],['uf','CHAR(2)','nn'] ]},
+      { n:'Pedido', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['data','DATE','nn'],['total','DECIMAL(10,2)',''],['cliente_id','INT','fk nn'] ]},
+      { n:'ItemPedido', x:760, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['quantidade','INT','nn'],['preco_unit','DECIMAL(10,2)','nn'],['pedido_id','INT','fk nn'],['produto_id','INT','fk nn'] ]},
+      { n:'Produto', x:760, y:340, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(120)','nn'],['preco','DECIMAL(10,2)','nn'],['categoria_id','INT','fk'] ]},
+      { n:'Categoria', x:400, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(60)','nn uq'] ]}
+    ], [
+      [0,'endereco_id',1,'id','possui'],
+      [2,'cliente_id',0,'id','realiza'],
+      [3,'pedido_id',2,'id','contém'],
+      [3,'produto_id',4,'id','refere'],
+      [4,'categoria_id',5,'id','agrupa']
+    ])
+  },
+  { id:'rh', name:'RH', icon:'👥', cat:'negocios',
+    desc:'Funcionários, departamentos, cargos, projetos e alocações.',
+    build: () => T([
+      { n:'Funcionario', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cpf','CHAR(11)','nn uq'],
+        ['departamento_id','INT','fk'],['cargo_id','INT','fk'] ]},
+      { n:'Departamento', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['localizacao','VARCHAR(100)',''] ]},
+      { n:'Cargo', x:400, y:340, c:'#10b981', a:[
+        ['id','INT','pk nn'],['titulo','VARCHAR(80)','nn'],['nivel','VARCHAR(20)',''] ]},
+      { n:'Projeto', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(120)','nn'],['inicio','DATE','nn'] ]},
+      { n:'Alocacao', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['horas_semanais','INT','nn'],['funcionario_id','INT','fk nn'],['projeto_id','INT','fk nn'] ]}
+    ], [
+      [0,'departamento_id',1,'id','pertence'],
+      [0,'cargo_id',2,'id','ocupa'],
+      [4,'funcionario_id',0,'id','aloca'],
+      [4,'projeto_id',3,'id','em']
+    ])
+  },
+  { id:'escola', name:'Escola', icon:'🎓', cat:'educacao',
+    desc:'Alunos, professores, turmas, disciplinas e matrículas.',
+    build: () => T([
+      { n:'Aluno', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['matricula','VARCHAR(20)','nn uq'],['nome','VARCHAR(100)','nn'] ]},
+      { n:'Professor', x:40, y:340, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['email','VARCHAR(255)','uq'] ]},
+      { n:'Turma', x:400, y:180, c:'#10b981', a:[
+        ['id','INT','pk nn'],['serie','VARCHAR(20)','nn'],['ano_letivo','INT','nn'] ]},
+      { n:'Disciplina', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['professor_id','INT','fk nn'] ]},
+      { n:'Matricula', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['nota_final','DECIMAL(4,2)',''],['aluno_id','INT','fk nn'],['turma_id','INT','fk nn'] ]}
+    ], [
+      [3,'professor_id',1,'id','leciona'],
+      [4,'aluno_id',0,'id','formaliza'],
+      [4,'turma_id',2,'id','referente']
+    ])
+  },
+  { id:'hospital', name:'Hospital', icon:'🏥', cat:'saude',
+    desc:'Pacientes, médicos, consultas, exames, especialidades e convênios.',
+    build: () => T([
+      { n:'Paciente', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cpf','CHAR(11)','nn uq'] ]},
+      { n:'Medico', x:40, y:340, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['crm','VARCHAR(20)','nn uq'],['especialidade_id','INT','fk'] ]},
+      { n:'Consulta', x:400, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['data_hora','TIMESTAMP','nn'],['valor','DECIMAL(10,2)',''],
+        ['paciente_id','INT','fk nn'],['medico_id','INT','fk nn'],['convenio_id','INT','fk'] ]},
+      { n:'Exame', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(120)','nn'],['consulta_id','INT','fk nn'] ]},
+      { n:'Especialidade', x:400, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(60)','nn uq'] ]},
+      { n:'Convenio', x:760, y:340, c:'#14b8a6', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['registro_ans','VARCHAR(20)','uq'] ]}
+    ], [
+      [1,'especialidade_id',4,'id','possui'],
+      [2,'paciente_id',0,'id','agenda'],
+      [2,'medico_id',1,'id','atende'],
+      [2,'convenio_id',5,'id','cobre'],
+      [3,'consulta_id',2,'id','solicita']
+    ])
+  },
+  { id:'restaurante', name:'Restaurante', icon:'🍽️', cat:'servicos',
+    desc:'Mesas, pedidos, itens, pratos, funcionários e reservas.',
+    build: () => T([
+      { n:'Mesa', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['numero','INT','nn uq'],['capacidade','INT','nn'] ]},
+      { n:'Pedido', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['data_hora','TIMESTAMP','nn'],['total','DECIMAL(10,2)',''],
+        ['mesa_id','INT','fk nn'],['funcionario_id','INT','fk'] ]},
+      { n:'ItemPedido', x:760, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['quantidade','INT','nn'],['preco_unit','DECIMAL(10,2)','nn'],
+        ['pedido_id','INT','fk nn'],['prato_id','INT','fk nn'] ]},
+      { n:'Prato', x:760, y:340, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(120)','nn'],['preco','DECIMAL(10,2)','nn'] ]},
+      { n:'Funcionario', x:40, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cargo','VARCHAR(40)','nn'] ]},
+      { n:'Reserva', x:400, y:340, c:'#14b8a6', a:[
+        ['id','INT','pk nn'],['data_hora','TIMESTAMP','nn'],['num_pessoas','INT','nn'],['mesa_id','INT','fk nn'] ]}
+    ], [
+      [1,'mesa_id',0,'id','abre'],
+      [1,'funcionario_id',4,'id','atende'],
+      [2,'pedido_id',1,'id','contém'],
+      [2,'prato_id',3,'id','refere'],
+      [5,'mesa_id',0,'id','reserva']
+    ])
+  },
+  { id:'biblioteca', name:'Biblioteca', icon:'📚', cat:'educacao',
+    desc:'Livros, autores, editoras, usuários e empréstimos.',
+    build: () => T([
+      { n:'Livro', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['isbn','VARCHAR(20)','nn uq'],['titulo','VARCHAR(200)','nn'],['editora_id','INT','fk'] ]},
+      { n:'Autor', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(120)','nn'] ]},
+      { n:'Editora', x:400, y:340, c:'#10b981', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'] ]},
+      { n:'Usuario', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cpf','CHAR(11)','nn uq'] ]},
+      { n:'Emprestimo', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['data_emp','DATE','nn'],['livro_id','INT','fk nn'],['usuario_id','INT','fk nn'] ]}
+    ], [
+      [0,'editora_id',2,'id','publica'],
+      [4,'livro_id',0,'id','devolve'],
+      [4,'usuario_id',3,'id','pega']
+    ])
+  },
+  { id:'hotel', name:'Hotel', icon:'🏨', cat:'servicos',
+    desc:'Hóspedes, quartos, reservas e pagamentos.',
+    build: () => T([
+      { n:'Hospede', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cpf','CHAR(11)','nn uq'] ]},
+      { n:'Quarto', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['numero','VARCHAR(10)','nn uq'],['diaria','DECIMAL(10,2)','nn'] ]},
+      { n:'Reserva', x:760, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['checkin','DATE','nn'],['checkout','DATE','nn'],
+        ['hospede_id','INT','fk nn'],['quarto_id','INT','fk nn'] ]},
+      { n:'Pagamento', x:760, y:340, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['valor','DECIMAL(10,2)','nn'],['reserva_id','INT','fk nn'] ]}
+    ], [
+      [2,'hospede_id',0,'id','faz'],
+      [2,'quarto_id',1,'id','reserva'],
+      [3,'reserva_id',2,'id','paga']
+    ])
+  },
+  { id:'financeiro', name:'Financeiro', icon:'💰', cat:'negocios',
+    desc:'Usuários, contas, transações, categorias e cartões.',
+    build: () => T([
+      { n:'Usuario', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['email','VARCHAR(255)','nn uq'] ]},
+      { n:'Conta', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['usuario_id','INT','fk nn'] ]},
+      { n:'Transacao', x:760, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['valor','DECIMAL(12,2)','nn'],['conta_id','INT','fk nn'],['categoria_id','INT','fk'] ]},
+      { n:'Categoria', x:400, y:340, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(60)','nn'] ]},
+      { n:'Cartao', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['numero','VARCHAR(20)','nn uq'],['usuario_id','INT','fk nn'] ]}
+    ], [
+      [1,'usuario_id',0,'id','possui'],
+      [2,'conta_id',1,'id','registra'],
+      [2,'categoria_id',3,'id','classifica'],
+      [4,'usuario_id',0,'id','usa']
+    ])
+  },
+  { id:'helpdesk', name:'Help Desk', icon:'🎫', cat:'tecnologia',
+    desc:'Usuários, técnicos, tickets, categorias e comentários.',
+    build: () => T([
+      { n:'Usuario', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['email','VARCHAR(255)','nn uq'] ]},
+      { n:'Tecnico', x:40, y:340, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['especialidade','VARCHAR(60)',''] ]},
+      { n:'Ticket', x:400, y:60, c:'#10b981', a:[
+        ['id','INT','pk nn'],['titulo','VARCHAR(200)','nn'],['status','VARCHAR(20)','nn'],
+        ['usuario_id','INT','fk nn'],['tecnico_id','INT','fk'],['categoria_id','INT','fk'] ]},
+      { n:'Categoria', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(60)','nn'],['sla_horas','INT','nn'] ]},
+      { n:'Comentario', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['texto','TEXT','nn'],['ticket_id','INT','fk nn'] ]}
+    ], [
+      [2,'usuario_id',0,'id','abre'],
+      [2,'tecnico_id',1,'id','atende'],
+      [2,'categoria_id',3,'id','classifica'],
+      [4,'ticket_id',2,'id','comenta']
+    ])
+  },
+  { id:'veterinaria', name:'Veterinária', icon:'🐶', cat:'saude',
+    desc:'Tutores, pets, veterinários, consultas e vacinas.',
+    build: () => T([
+      { n:'Tutor', x:40, y:60, c:'#6366f1', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['cpf','CHAR(11)','nn uq'] ]},
+      { n:'Pet', x:400, y:60, c:'#0ea5e9', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(60)','nn'],['tutor_id','INT','fk nn'] ]},
+      { n:'Veterinario', x:40, y:340, c:'#10b981', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(100)','nn'],['crmv','VARCHAR(20)','nn uq'] ]},
+      { n:'Consulta', x:760, y:60, c:'#f59e0b', a:[
+        ['id','INT','pk nn'],['data_hora','TIMESTAMP','nn'],['pet_id','INT','fk nn'],['veterinario_id','INT','fk nn'] ]},
+      { n:'Vacina', x:760, y:340, c:'#ec4899', a:[
+        ['id','INT','pk nn'],['nome','VARCHAR(80)','nn'],['pet_id','INT','fk nn'] ]}
+    ], [
+      [1,'tutor_id',0,'id','possui'],
+      [3,'pet_id',1,'id','paciente'],
+      [3,'veterinario_id',2,'id','atende'],
+      [4,'pet_id',1,'id','aplica']
+    ])
+  }
+];
+
+/* ============================================================
+   GEOMETRY
+   ============================================================ */
+function nameXFor(e){
+  let m = 0;
+  for (const a of e.attrs){ const n = (a.pk?1:0)+(a.fk?1:0)+(a.uq?1:0); if (n > m) m = n; }
+  return 12 + m*BADGE_W + (m > 0 ? 4 : 0);
+}
+function entitySize(e){
+  const nx = nameXFor(e);
+  let w = Math.max(MIN_W, tw(e.name, `600 13px ${FONT}`) + 40);
+  for (const a of e.attrs){
+    const rw = nx + tw(a.name || '', `12px ${FONT}`) + 16 + tw(a.type || '', `10.5px ${FONT}`) + 16;
+    if (rw > w) w = rw;
+  }
+  const n = e.attrs.length;
+  const h = HEADER_H + (n === 0 ? 14 : n*ROW_H + 8);
+  return { w: Math.ceil(w), h: Math.ceil(h) };
+}
+function centerOf(e){ const s = entitySize(e); return { x: e.x + s.w/2, y: e.y + s.h/2 }; }
+function edgePoint(e, tx, ty){
+  const s = entitySize(e);
+  const cx = e.x + s.w/2, cy = e.y + s.h/2;
+  const dx = tx - cx, dy = ty - cy;
+  if (!dx && !dy) return { x: cx, y: cy };
+  const sx = dx === 0 ? Infinity : (s.w/2) / Math.abs(dx);
+  const sy = dy === 0 ? Infinity : (s.h/2) / Math.abs(dy);
+  const t = Math.min(sx, sy);
+  return { x: cx + dx*t, y: cy + dy*t };
+}
+function attrY(e, idx){ return e.y + HEADER_H + idx*ROW_H + ROW_H/2; }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderEntity(e){
+  const { w, h } = entitySize(e);
+  const isSel = (selection && selection.type === 'entity' && selection.id === e.id) || multiSel.has(e.id);
+  const isPrimary = selection && selection.type === 'entity' && selection.id === e.id;
+  const isPend = pendingRelFrom === e.id || (pendingAttrFrom && pendingAttrFrom.entityId === e.id);
+  const isWeak = e.type === 'weak';
+  const isAssoc = e.type === 'assoc';
+  let cls = 'entity';
+  if (isPrimary) cls += ' selected';
+  else if (isSel) cls += ' multi';
+  if (isPend) cls += ' pending';
+  if (isWeak) cls += ' weak';
+  if (isAssoc) cls += ' assoc';
+
+  const nx = nameXFor(e);
+  let s = `<g data-eid="${e.id}" class="${cls}" transform="translate(${e.x},${e.y})">`;
+  s += `<rect class="body" x="0" y="0" width="${w}" height="${h}" rx="${HEADER_R}" fill="var(--ent-bg)"/>`;
+  if (isWeak || isAssoc) s += `<rect class="body2" x="4" y="4" width="${w-8}" height="${h-8}" rx="${HEADER_R-3}"/>`;
+  s += `<path d="M 0 ${HEADER_R} Q 0 0 ${HEADER_R} 0 L ${w-HEADER_R} 0 Q ${w} 0 ${w} ${HEADER_R} L ${w} ${HEADER_H} L 0 ${HEADER_H} Z" fill="${e.color}" style="pointer-events:none"/>`;
+  s += `<text x="${w/2}" y="${HEADER_H/2 + 5}" text-anchor="middle" font-family="${FONT}" font-size="13" font-weight="600" fill="#fff" style="pointer-events:none">${esc(e.name)}</text>`;
+  if (isWeak) s += `<text x="${w-8}" y="${HEADER_H-6}" text-anchor="end" font-family="${FONT}" font-size="9" font-weight="800" fill="#fff" opacity="0.7" style="pointer-events:none">WEAK</text>`;
+  if (isAssoc) s += `<text x="${w-8}" y="${HEADER_H-6}" text-anchor="end" font-family="${FONT}" font-size="9" font-weight="800" fill="#fff" opacity="0.7" style="pointer-events:none">ASSOC</text>`;
+
+  e.attrs.forEach((a, i) => {
+    const y0 = HEADER_H + i*ROW_H;
+    const ty = y0 + ROW_H/2 + 4;
+    const hasRefs = a.refs && a.refs.length > 0;
+    if (i > 0) s += `<line x1="1" y1="${y0}" x2="${w-1}" y2="${y0}" stroke="var(--ent-row)" stroke-width="1" style="pointer-events:none"/>`;
+    if (hasRefs) s += `<rect x="2" y="${y0+1}" width="${w-4}" height="${ROW_H-1}" rx="4" fill="rgba(56,189,248,.12)" style="pointer-events:none"/>`;
+    let mx = 12;
+    if (a.pk){ s += `<text x="${mx}" y="${ty}" font-family="${FONT}" font-size="8" font-weight="800" fill="#fbbf24" style="pointer-events:none">PK</text>`; mx += BADGE_W; }
+    if (a.fk){ s += `<text x="${mx}" y="${ty}" font-family="${FONT}" font-size="8" font-weight="800" fill="#38bdf8" style="pointer-events:none">FK</text>`; mx += BADGE_W; }
+    if (a.uq){ s += `<text x="${mx}" y="${ty}" font-family="${FONT}" font-size="8" font-weight="800" fill="#34d399" style="pointer-events:none">UQ</text>`; mx += BADGE_W; }
+    s += `<text x="${nx}" y="${ty}" font-family="${FONT}" font-size="12" fill="${hasRefs ? '#7dd3fc' : 'var(--text)'}" style="pointer-events:none">${esc(a.name)}</text>`;
+    s += `<text x="${w-12}" y="${ty}" text-anchor="end" font-family="${FONT}" font-size="10.5" fill="var(--muted)" style="pointer-events:none">${esc(a.type || '')}</text>`;
+    if (hasRefs){
+      const dotX = w - 5;
+      const dotY = ty - 4;
+      const n = a.refs.length;
+      s += `<circle cx="${dotX}" cy="${dotY}" r="${3 + Math.min(n-1,2)*0.7}" fill="#38bdf8" opacity="0.9" style="pointer-events:none"/>`;
+      if (n > 1) s += `<text x="${dotX+9}" y="${dotY+3.5}" font-family="${FONT}" font-size="9" font-weight="800" fill="#38bdf8" style="pointer-events:none">${n}</text>`;
+    }
+  });
+  if (isPrimary) s += `<rect x="-4" y="-4" width="${w+8}" height="${h+8}" rx="${HEADER_R+3}" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.75" style="pointer-events:none"/>`;
+  s += `</g>`;
+  return s;
+}
+
+function markerAt(p, dirX, dirY, card, color){
+  const px = -dirY, py = dirX;
+  if (isMany(card)){
+    const bx = p.x + dirX*16, by = p.y + dirY*16;
+    return `<path d="M ${p.x} ${p.y} L ${bx + px*7} ${by + py*7} M ${p.x} ${p.y} L ${bx} ${by} M ${p.x} ${p.y} L ${bx - px*7} ${by - py*7}" stroke="${color}" stroke-width="1.6" fill="none" stroke-linecap="round" style="pointer-events:none"/>`;
+  }
+  const bx = p.x + dirX*14, by = p.y + dirY*14;
+  let out = `<line x1="${bx - px*8}" y1="${by - py*8}" x2="${bx + px*8}" y2="${by + py*8}" stroke="${color}" stroke-width="1.6" stroke-linecap="round" style="pointer-events:none"/>`;
+  if (/0/.test(card)){
+    const cx = p.x + dirX*24, cy = p.y + dirY*24;
+    out += `<circle cx="${cx}" cy="${cy}" r="4.5" fill="none" stroke="${color}" stroke-width="1.4" style="pointer-events:none"/>`;
+  }
+  return out;
+}
+
+function computeCurve(p1, p2){
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const nx = dy / dist, ny = -dx / dist;
+  const offset = Math.min(70, dist * 0.18);
+  const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+  return { cx: mx + nx * offset, cy: my + ny * offset };
+}
+
+function renderRel(r){
+  const a = getEnt(r.from), b = getEnt(r.to);
+  if (!a || !b) return '';
+  if (a.id === b.id) return '';
+  const ca = centerOf(a), cb = centerOf(b);
+  const p1 = edgePoint(a, cb.x, cb.y);
+  const p2 = edgePoint(b, ca.x, ca.y);
+  const { cx, cy } = computeCurve(p1, p2);
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx/len, uy = dy/len, px = -uy, py = ux;
+  const isSel = selection && selection.type === 'rel' && selection.id === r.id;
+  const isIdent = r.type === 'identifying';
+  const cls = 'rel' + (isSel ? ' selected' : '') + (isIdent ? ' identifying' : '');
+  const color = isSel ? '#60a5fa' : 'var(--rel-line)';
+  let s = `<g data-rid="${r.id}" class="${cls}">`;
+  s += `<path class="hit" d="M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}" fill="none"/>`;
+  s += `<path class="line" d="M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}" style="stroke:${color}"/>`;
+  const t1dx = p1.x - cx, t1dy = p1.y - cy, t1len = Math.hypot(t1dx,t1dy)||1;
+  const t2dx = p2.x - cx, t2dy = p2.y - cy, t2len = Math.hypot(t2dx,t2dy)||1;
+  s += markerAt(p1, t1dx/t1len, t1dy/t1len, r.cardFrom, color);
+  s += markerAt(p2, t2dx/t2len, t2dy/t2len, r.cardTo, color);
+  const midX = 0.25*p1.x + 0.5*cx + 0.25*p2.x;
+  const midY = 0.25*p1.y + 0.5*cy + 0.25*p2.y;
+  const dw = Math.max(76, tw(r.name || '', `600 12px ${FONT}`) + 32);
+  const dh = 30;
+  s += `<polygon points="${midX},${midY - dh/2} ${midX + dw/2},${midY} ${midX},${midY + dh/2} ${midX - dw/2},${midY}" fill="var(--diamond)" stroke="${color}" stroke-width="${isSel ? 2 : 1.4}" style="pointer-events:none"/>`;
+  s += `<text x="${midX}" y="${midY + 4}" text-anchor="middle" font-family="${FONT}" font-size="11.5" font-weight="600" fill="var(--text)" style="pointer-events:none">${esc(r.name)}</text>`;
+  const l1x = p1.x + ux*28 + px*13, l1y = p1.y + uy*28 + py*13;
+  const l2x = p2.x - ux*28 + px*13, l2y = p2.y - uy*28 + py*13;
+  s += `<text x="${l1x}" y="${l1y + 4}" text-anchor="middle" font-family="${FONT}" font-size="10.5" font-weight="800" fill="#fbbf24" style="pointer-events:none">${esc(r.cardFrom)}</text>`;
+  s += `<text x="${l2x}" y="${l2y + 4}" text-anchor="middle" font-family="${FONT}" font-size="10.5" font-weight="800" fill="#fbbf24" style="pointer-events:none">${esc(r.cardTo)}</text>`;
+  s += `</g>`;
+  return s;
+}
+
+/* ---------- Attribute reference rendering (one line per ref) ---------- */
+function renderAttrRefs(){
+  if (!showAttrRefs) return '';
+  let out = '';
+  // Count how many refs exit each attribute to distribute control-point offsets
+  const outgoing = new Map(); // srcAttrKey -> count
+  const incoming = new Map();
+  for (const e of state.entities){
+    for (const a of e.attrs){
+      if (!a.refs) continue;
+      outgoing.set(`${e.id}|${a.id}`, a.refs.length);
+    }
+  }
+
+  for (const srcE of state.entities){
+    const szS = entitySize(srcE);
+    const cS = centerOf(srcE);
+    for (let si = 0; si < srcE.attrs.length; si++){
+      const srcA = srcE.attrs[si];
+      if (!srcA.refs || !srcA.refs.length) continue;
+      srcA.refs.forEach((ref, ri) => {
+        const tgtE = getEnt(ref.entityId);
+        if (!tgtE) return;
+        const ti = tgtE.attrs.findIndex(x => x.id === ref.attrId);
+        if (ti < 0) return;
+        const tgtA = tgtE.attrs[ti];
+        const szT = entitySize(tgtE);
+        const cT = centerOf(tgtE);
+
+        // Decide exit/entry sides by horizontal position
+        const toRight = cT.x >= cS.x;
+        const pS = { x: toRight ? srcE.x + szS.w : srcE.x, y: attrY(srcE, si) };
+        const pT = { x: toRight ? tgtE.x : tgtE.x + szT.w, y: attrY(tgtE, ti) };
+
+        // Multi-ref distribution: spread the control points to avoid overlap
+        const totalRefs = srcA.refs.length;
+        const spread = (ri - (totalRefs - 1) / 2) * 34;
+        const baseOffset = Math.max(60, Math.min(Math.abs(pT.x - pS.x) * 0.55, 240));
+        const off = baseOffset + spread;
+
+        const c1 = { x: pS.x + (toRight ? off : -off), y: pS.y };
+        const c2 = { x: pT.x + (toRight ? -off : off), y: pT.y };
+
+        const color = tgtE.color;
+        const refKey = `${srcE.id}|${srcA.id}|${ref.entityId}|${ref.attrId}`;
+        const isHighlight = hoveredRef && hoveredRef === refKey;
+
+        const d = `M ${pS.x} ${pS.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${pT.x} ${pT.y}`;
+
+        out += `<g class="attr-ref ${isHighlight ? 'highlight' : ''}" data-ref-key="${refKey}"
+                    data-ref-src-e="${srcE.id}" data-ref-src-a="${srcA.id}"
+                    data-ref-tgt-e="${tgtE.id}" data-ref-tgt-a="${ref.attrId}" style="color:${color}">
+          <path class="ref-hit" d="${d}"/>
+          <path class="ref-line" d="${d}" stroke="${color}" marker-end="url(#arrow-marker)"/>
+          <circle class="ref-dot" cx="${pS.x}" cy="${pS.y}" r="3.2" fill="${color}"/>
+          <circle class="ref-dot" cx="${pT.x}" cy="${pT.y}" r="2.4" fill="none" stroke="${color}" stroke-width="1.4"/>
+        </g>`;
+      });
+    }
+  }
+  return out;
+}
+
+let hoveredRef = null;
+
+function renderSVG(){
+  relLayer.innerHTML = state.rels.map(renderRel).join('');
+  contentG.innerHTML = state.entities.map(renderEntity).join('');
+  attrRefLayer.innerHTML = renderAttrRefs();
+  emptyEl.hidden = state.entities.length > 0;
+}
+
+function renderPreview(){
+  overlayG.innerHTML = '';
+  if (tool === 'rel' && pendingRelFrom && mouseWorld){
+    const e = getEnt(pendingRelFrom);
+    if (!e) return;
+    const p1 = edgePoint(e, mouseWorld.x, mouseWorld.y);
+    const { cx, cy } = computeCurve(p1, mouseWorld);
+    overlayG.innerHTML = `<path d="M ${p1.x} ${p1.y} Q ${cx} ${cy} ${mouseWorld.x} ${mouseWorld.y}" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4" opacity="0.75" fill="none"/><circle cx="${mouseWorld.x}" cy="${mouseWorld.y}" r="4" fill="#fbbf24" opacity="0.9"/>`;
+  } else if (tool === 'attrlink' && pendingAttrFrom && mouseWorld){
+    const e = getEnt(pendingAttrFrom.entityId);
+    if (!e) return;
+    const idx = e.attrs.findIndex(a => a.id === pendingAttrFrom.attrId);
+    if (idx < 0) return;
+    const sz = entitySize(e);
+    const y = attrY(e, idx);
+    const toRight = mouseWorld.x > e.x + sz.w / 2;
+    const p1 = { x: toRight ? e.x + sz.w : e.x, y };
+    const off = Math.max(60, Math.min(Math.abs(mouseWorld.x - p1.x) * 0.55, 220));
+    const c1 = { x: p1.x + (toRight ? off : -off), y };
+    const c2 = { x: mouseWorld.x + (toRight ? -off : off), y: mouseWorld.y };
+    overlayG.innerHTML = `<path d="M ${p1.x} ${p1.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${mouseWorld.x} ${mouseWorld.y}" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4" opacity="0.9" fill="none" marker-end="url(#arrow-marker)"/><circle cx="${mouseWorld.x}" cy="${mouseWorld.y}" r="4" fill="#38bdf8" opacity="0.95"/>`;
+  }
+}
+
+function applyView(){
+  const t = `translate(${view.x},${view.y}) scale(${view.k})`;
+  viewport.setAttribute('transform', t);
+  gridSm.setAttribute('patternTransform', t);
+  gridLg.setAttribute('patternTransform', t);
+  document.getElementById('z-val').textContent = Math.round(view.k*100) + '%';
+}
+
+function updateStatus(){
+  const ne = state.entities.length;
+  const na = state.entities.reduce((s, e) => s + e.attrs.length, 0);
+  const nc = countRefs();
+  document.getElementById('st-entities').textContent = ne + (ne === 1 ? ' entidade' : ' entidades');
+  document.getElementById('st-refs').textContent = nc + (nc === 1 ? ' vínculo' : ' vínculos');
+  document.getElementById('st-attrs').textContent = na + (na === 1 ? ' atributo' : ' atributos');
+  document.getElementById('st-tool').textContent = tool === 'select' ? 'Selecionar' : tool === 'entity' ? 'Entidade' : tool === 'rel' ? 'Relacionamento' : 'Vincular atributos';
+  document.getElementById('btn-undo').disabled = !undoStack.length;
+  document.getElementById('btn-redo').disabled = !redoStack.length;
+  document.getElementById('btn-copy').disabled = !selection;
+  document.getElementById('btn-paste').disabled = !clipboard;
+}
+
+function renderAll(){ renderSVG(); renderPanel(); applyView(); updateStatus(); }
+
+/* ============================================================
+   PROPS PANEL
+   ============================================================ */
+function attrRefsHTML(entityId, attrIdx, attr){
+  if (!attr.refs || !attr.refs.length) return '';
+  return `<div class="attr-refs">${attr.refs.map((ref, ri) => {
+    const t = getEnt(ref.entityId);
+    if (!t) return '';
+    const ta = t.attrs.find(x => x.id === ref.attrId);
+    if (!ta) return '';
+    return `<span class="ref-chip" data-ref-jump="${ref.entityId}" title="Ir para ${esc(t.name)}.${esc(ta.name)}">
+      → ${esc(t.name)}.${esc(ta.name)}
+      <button class="ref-del" data-ref-del="${entityId}:${attrIdx}:${ri}" title="Remover vínculo">×</button>
+    </span>`;
+  }).join('')}</div>`;
+}
+
+function attrRowHTML(a, i, entityId){
+  const hasRefs = a.refs && a.refs.length > 0;
+  return `<div class="attr-row ${hasRefs ? 'has-refs' : ''}">
+    <input class="a-input a-name" data-ai="${i}" data-k="name" value="${esc(a.name)}" placeholder="nome_atributo" spellcheck="false">
+    <input class="a-input a-type" data-ai="${i}" data-k="type" value="${esc(a.type)}" list="tipos" placeholder="TIPO" spellcheck="false">
+    <div class="flags">
+      <button class="flag ${a.pk ? 'on pk' : ''}" data-ai="${i}" data-flag="pk" title="Chave Primária">PK</button>
+      <button class="flag ${a.fk ? 'on fk' : ''}" data-ai="${i}" data-flag="fk" title="Chave Estrangeira">FK</button>
+      <button class="flag ${a.nn ? 'on nn' : ''}" data-ai="${i}" data-flag="nn" title="NOT NULL">NN</button>
+      <button class="flag ${a.uq ? 'on uq' : ''}" data-ai="${i}" data-flag="uq" title="UNIQUE">UQ</button>
+      <button class="flag ref-add" data-ref-add="${entityId}:${i}" title="Vincular a outro atributo">🔗+</button>
+      <button class="flag del-attr" data-ai="${i}" title="Remover atributo">✕</button>
+    </div>
+    ${attrRefsHTML(entityId, i, a)}
+  </div>`;
+}
+
+function emptyPanelHTML(){
+  const results = window._searchResults || [];
+  return `<div class="ph">
+    <h3>👋 Bem-vindo</h3>
+    <p>Selecione uma entidade para editar ou use a busca abaixo.</p>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" type="text" placeholder="Buscar entidade..." spellcheck="false" autocomplete="off">
+    </div>
+    <div class="search-list" id="search-list">
+      ${results.length ? results.map(e => `
+        <div class="search-item" data-search-id="${e.id}">
+          <span class="dot" style="background:${e.color}"></span>
+          <span>${esc(e.name)}</span>
+          <span class="meta">${e.attrs.length} atr.</span>
+        </div>
+      `).join('') : `<div class="empty">${state.entities.length ? 'Nenhum resultado.' : 'Nenhuma entidade criada ainda.'}</div>`}
+    </div>
+    <ul class="tips">
+      <li><kbd>A</kbd> <b>Vincular atributos</b> — ou clique em 🔗+ num atributo</li>
+      <li><b>Cada vínculo</b> gera <b>uma linha própria</b> que acompanha a entidade</li>
+      <li><b>Shift</b>+clique seleciona várias · <kbd>Ctrl</kbd>+<kbd>A</kbd> todas</li>
+      <li><kbd>?</kbd> ver todos os atalhos</li>
+    </ul>
+  </div>`;
+}
+
+function renderPanel(){
+  if (!selection){ propsEl.innerHTML = emptyPanelHTML(); bindEmptyPanel(); return; }
+  if (selection.type === 'entity') renderEntityPanel();
+  else renderRelPanel();
+}
+
+function bindEmptyPanel(){
+  const inp = propsEl.querySelector('#search-input');
+  if (inp){
+    inp.addEventListener('input', ev => {
+      const q = ev.target.value.trim().toLowerCase();
+      window._searchResults = q
+        ? state.entities.filter(e => e.name.toLowerCase().includes(q) || e.attrs.some(a => a.name.toLowerCase().includes(q)))
+        : state.entities;
+      renderPanel();
+      const n = propsEl.querySelector('#search-input');
+      if (n && q){ n.focus(); n.setSelectionRange(q.length, q.length); }
+    });
+  }
+  propsEl.querySelectorAll('[data-search-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const e = getEnt(el.dataset.searchId);
+      if (!e) return;
+      selection = { type:'entity', id: e.id };
+      multiSel.clear();
+      renderPanel(); renderSVG();
+      const s = entitySize(e);
+      const r = svg.getBoundingClientRect();
+      const k = clamp(Math.min(r.width / (s.w + 200), r.height / (s.h + 200)), 0.4, 1.4);
+      view.k = k;
+      view.x = r.width/2 - (e.x + s.w/2) * k;
+      view.y = r.height/2 - (e.y + s.h/2) * k;
+      applyView();
+    });
+  });
+}
+
+function renderEntityPanel(){
+  const e = getEnt(selection.id);
+  if (!e){ selection = null; return renderPanel(); }
+  const rels = relsOfEntity(e.id);
+  const refsCount = e.attrs.reduce((s,a) => s + ((a.refs||[]).length), 0);
+
+  const relsHTML = rels.length ? `<div class="rel-list">${rels.map(r => {
+    const isFrom = r.from === e.id;
+    const otherId = isFrom ? r.to : r.from;
+    const other = getEnt(otherId);
+    const dir = isFrom ? '→' : '←';
+    const cardA = isFrom ? r.cardFrom : r.cardTo;
+    const cardB = isFrom ? r.cardTo : r.cardFrom;
+    const idBadge = r.type === 'identifying' ? '<span class="id-badge">ID</span>' : '';
+    return `<div class="rel-item" data-jump-rel="${r.id}">
+      <span class="arrow">${dir}</span>
+      <span class="name">${esc(other ? other.name : '?')}</span>
+      <span class="card">${esc(cardA)}:${esc(cardB)}</span>
+      ${idBadge}
+      <span class="relname">${esc(r.name)}</span>
+    </div>`;
+  }).join('')}</div>` : '<div class="empty">Sem relacionamentos.</div>';
+
+  propsEl.innerHTML = `
+    <div class="ph-head"><span class="dot" style="background:${e.color}"></span><h3>Entidade</h3></div>
+    <label class="fld"><span>Nome</span><input id="ent-name" type="text" value="${esc(e.name)}" placeholder="Nome" spellcheck="false"></label>
+    <label class="fld"><span>Tipo</span><select id="ent-type">${ENT_TYPES.map(t => `<option value="${t.id}" ${e.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select></label>
+    <label class="fld"><span>Cor</span><input id="ent-color" type="color" value="${e.color}"></label>
+    <label class="fld"><span>Nota</span><textarea id="ent-note" placeholder="Observações...">${esc(e.note || '')}</textarea></label>
+    <div class="sec-head"><span>Atributos (${e.attrs.length}) — 🔗 ${refsCount}</span><button class="mini" id="add-attr">+ Atributo</button></div>
+    <p style="color:var(--muted);font-size:11px;margin:-4px 0 10px;line-height:1.5">Clique em <b style="color:#38bdf8">🔗+</b> para vincular um atributo a outro.</p>
+    <div class="attrs">${e.attrs.map((a, i) => attrRowHTML(a, i, e.id)).join('') || '<div class="empty">Nenhum atributo.</div>'}</div>
+    <div class="sec-head"><span>Relacionamentos (${rels.length})</span></div>
+    ${relsHTML}
+    <div class="row-btns">
+      <button class="btn ghost" id="dup-ent">Duplicar</button>
+      <button class="btn danger" id="del-ent">Excluir</button>
+    </div>
+  `;
+  bindEntityPanel(e);
+}
+
+function bindEntityPanel(e){
+  const nameIn = propsEl.querySelector('#ent-name');
+  nameIn.addEventListener('focus', pushHistory);
+  nameIn.addEventListener('input', ev => { e.name = ev.target.value; renderSVG(); persist(); });
+  nameIn.addEventListener('keydown', ev => { if (ev.key === 'Enter') ev.target.blur(); });
+
+  propsEl.querySelector('#ent-type').addEventListener('change', ev => { pushHistory(); e.type = ev.target.value; renderSVG(); persist(); });
+
+  const colorIn = propsEl.querySelector('#ent-color');
+  colorIn.addEventListener('focus', pushHistory);
+  colorIn.addEventListener('input', ev => {
+    e.color = ev.target.value;
+    const dot = propsEl.querySelector('.ph-head .dot');
+    if (dot) dot.style.background = e.color;
+    renderSVG(); persist();
+  });
+
+  const noteIn = propsEl.querySelector('#ent-note');
+  noteIn.addEventListener('focus', pushHistory);
+  noteIn.addEventListener('input', ev => { e.note = ev.target.value; persist(); });
+
+  propsEl.querySelector('#add-attr').addEventListener('click', () => {
+    pushHistory();
+    e.attrs.push({ id: uid(), name: 'novo_campo', type: 'VARCHAR(100)', pk:false, fk:false, nn:false, uq:false, refs: [] });
+    renderPanel(); renderSVG(); persist();
+    requestAnimationFrame(() => {
+      const inputs = propsEl.querySelectorAll('.a-name');
+      const last = inputs[inputs.length - 1];
+      if (last){ last.focus(); last.select(); }
+    });
+  });
+
+  propsEl.querySelectorAll('.a-input').forEach(inp => {
+    inp.addEventListener('focus', pushHistory);
+    inp.addEventListener('input', ev => {
+      const i = +ev.target.dataset.ai, k = ev.target.dataset.k;
+      if (!e.attrs[i]) return;
+      e.attrs[i][k] = ev.target.value;
+      renderSVG(); persist();
+    });
+    inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') ev.target.blur(); });
+  });
+
+  propsEl.querySelectorAll('.flag[data-flag]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pushHistory();
+      const i = +btn.dataset.ai, f = btn.dataset.flag;
+      if (!e.attrs[i]) return;
+      e.attrs[i][f] = !e.attrs[i][f];
+      renderPanel(); renderSVG(); persist();
+    });
+  });
+
+  propsEl.querySelectorAll('.flag.ref-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [eid, ai] = btn.dataset.refAdd.split(':');
+      openRefPicker(eid, +ai);
+    });
+  });
+
+  propsEl.querySelectorAll('.del-attr').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pushHistory();
+      const removed = e.attrs[+btn.dataset.ai];
+      if (removed){
+        // remove outgoing refs from this attr
+        // remove incoming refs pointing to this attr from any entity
+        for (const en of state.entities){
+          for (const a of en.attrs){
+            if (!a.refs) continue;
+            a.refs = a.refs.filter(r => !(r.entityId === e.id && r.attrId === removed.id));
+          }
+        }
+      }
+      e.attrs.splice(+btn.dataset.ai, 1);
+      renderPanel(); renderSVG(); persist();
+    });
+  });
+
+  propsEl.querySelectorAll('.ref-del').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const [eid, ai, ri] = btn.dataset.refDel.split(':');
+      const ent = getEnt(eid);
+      if (!ent || !ent.attrs[+ai]) return;
+      pushHistory();
+      ent.attrs[+ai].refs.splice(+ri, 1);
+      renderPanel(); renderSVG(); persist();
+    });
+  });
+
+  propsEl.querySelectorAll('.ref-chip[data-ref-jump]').forEach(chip => {
+    chip.addEventListener('click', ev => {
+      if (ev.target.closest('.ref-del')) return;
+      const tid = chip.dataset.refJump;
+      if (tid && getEnt(tid)){
+        selection = { type:'entity', id: tid };
+        multiSel.clear();
+        renderPanel(); renderSVG();
+      }
+    });
+  });
+
+  propsEl.querySelectorAll('[data-jump-rel]').forEach(el => {
+    el.addEventListener('click', () => {
+      selection = { type:'rel', id: el.dataset.jumpRel };
+      renderPanel(); renderSVG();
+    });
+  });
+
+  propsEl.querySelector('#dup-ent').addEventListener('click', duplicateSelection);
+  propsEl.querySelector('#del-ent').addEventListener('click', deleteSelection);
+}
+
+function renderRelPanel(){
+  const r = getRel(selection.id);
+  if (!r){ selection = null; return renderPanel(); }
+  const entOpts = sel => state.entities.map(e => `<option value="${e.id}" ${e.id === sel ? 'selected' : ''}>${esc(e.name)}</option>`).join('');
+  const cardOpts = v => CARDS.map(c => `<option value="${c}" ${c === v ? 'selected' : ''}>${c}</option>`).join('');
+  const typeOpts = v => REL_TYPES.map(t => `<option value="${t.id}" ${t.id === v ? 'selected' : ''}>${t.label}</option>`).join('');
+  propsEl.innerHTML = `
+    <div class="ph-head"><span class="dot" style="background:#a855f7"></span><h3>Relacionamento</h3></div>
+    <label class="fld"><span>Nome</span><input id="rel-name" type="text" value="${esc(r.name)}" placeholder="nome" spellcheck="false"></label>
+    <label class="fld"><span>Tipo</span><select id="rel-type">${typeOpts(r.type)}</select></label>
+    <label class="fld"><span>Origem</span><select id="rel-from">${entOpts(r.from)}</select></label>
+    <label class="fld"><span>Cardinalidade origem</span><select id="rel-cf">${cardOpts(r.cardFrom)}</select></label>
+    <label class="fld"><span>Destino</span><select id="rel-to">${entOpts(r.to)}</select></label>
+    <label class="fld"><span>Cardinalidade destino</span><select id="rel-ct">${cardOpts(r.cardTo)}</select></label>
+    <p style="color:var(--muted);font-size:11px;margin:14px 0 0;line-height:1.55">💡 Para desenhar linhas entre atributos específicos, use o botão <b style="color:#38bdf8">🔗+</b> na aba de atributos de cada entidade.</p>
+    <div class="row-btns">
+      <button class="btn ghost" id="inv-rel">⇄ Inverter</button>
+      <button class="btn danger" id="del-rel">Excluir</button>
+    </div>
+  `;
+  const rn = propsEl.querySelector('#rel-name');
+  rn.addEventListener('focus', pushHistory);
+  rn.addEventListener('input', ev => { r.name = ev.target.value; renderSVG(); persist(); });
+  rn.addEventListener('keydown', ev => { if (ev.key === 'Enter') ev.target.blur(); });
+  propsEl.querySelector('#rel-type').addEventListener('change', ev => { pushHistory(); r.type = ev.target.value; renderSVG(); persist(); });
+  propsEl.querySelector('#rel-from').addEventListener('change', ev => { pushHistory(); r.from = ev.target.value; renderSVG(); persist(); });
+  propsEl.querySelector('#rel-to').addEventListener('change', ev => { pushHistory(); r.to = ev.target.value; renderSVG(); persist(); });
+  propsEl.querySelector('#rel-cf').addEventListener('change', ev => { pushHistory(); r.cardFrom = ev.target.value; renderSVG(); persist(); });
+  propsEl.querySelector('#rel-ct').addEventListener('change', ev => { pushHistory(); r.cardTo = ev.target.value; renderSVG(); persist(); });
+  propsEl.querySelector('#inv-rel').addEventListener('click', () => {
+    pushHistory();
+    [r.from, r.to] = [r.to, r.from];
+    [r.cardFrom, r.cardTo] = [r.cardTo, r.cardFrom];
+    renderPanel(); renderSVG(); persist();
+  });
+  propsEl.querySelector('#del-rel').addEventListener('click', deleteSelection);
+}
+
+/* ============================================================
+   REFERENCE PICKER
+   ============================================================ */
+const refModal = document.getElementById('ref-modal');
+function openRefPicker(entityId, attrIdx){
+  const ent = getEnt(entityId);
+  if (!ent) return;
+  const attr = ent.attrs[attrIdx];
+  if (!attr) return;
+  pickerState = { entityId, attrIdx };
+  document.getElementById('ref-source-info').innerHTML = `Atributo de origem: <b style="color:#38bdf8">${esc(ent.name)}.${esc(attr.name)}</b> (${esc(attr.type)})`;
+  const entSel = document.getElementById('ref-entity');
+  const attrSel = document.getElementById('ref-attr');
+  const populateEntities = () => {
+    entSel.innerHTML = state.entities.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+    // preselect first other entity
+    const other = state.entities.find(e => e.id !== entityId);
+    if (other) entSel.value = other.id;
+    else if (state.entities.length) entSel.value = state.entities[0].id;
+    populateAttrs();
+  };
+  const populateAttrs = () => {
+    const e = getEnt(entSel.value);
+    if (!e){ attrSel.innerHTML = ''; return; }
+    attrSel.innerHTML = e.attrs.map(a => `<option value="${a.id}">${esc(a.name)} (${esc(a.type)})</option>`).join('');
+  };
+  entSel.onchange = populateAttrs;
+  populateEntities();
+  refModal.hidden = false;
+}
+document.getElementById('ref-close').addEventListener('click', () => refModal.hidden = true);
+document.getElementById('ref-cancel').addEventListener('click', () => refModal.hidden = true);
+refModal.addEventListener('mousedown', ev => { if (ev.target === refModal) refModal.hidden = true; });
+document.getElementById('ref-add').addEventListener('click', () => {
+  if (!pickerState) return;
+  const ent = getEnt(pickerState.entityId);
+  if (!ent) return;
+  const attr = ent.attrs[pickerState.attrIdx];
+  if (!attr) return;
+  const tgtE = getEnt(document.getElementById('ref-entity').value);
+  const tgtAId = document.getElementById('ref-attr').value;
+  if (!tgtE || !tgtAId) return;
+  const tgtA = tgtE.attrs.find(a => a.id === tgtAId);
+  if (!tgtA) return;
+  if (!attr.refs) attr.refs = [];
+  // prevent duplicates
+  if (attr.refs.some(r => r.entityId === tgtE.id && r.attrId === tgtA.id)){
+    toast('Vínculo já existe', '⚠️');
+    return;
+  }
+  pushHistory();
+  attr.refs.push({ entityId: tgtE.id, attrId: tgtA.id });
+  if (!attr.fk) attr.fk = true;
+  // ensure a rel exists between the entities
+  const exists = state.rels.some(r => (r.from === ent.id && r.to === tgtE.id) || (r.from === tgtE.id && r.to === ent.id));
+  if (!exists){
+    state.rels.push({ id: uid(), name:'relaciona', from: ent.id, to: tgtE.id, cardFrom:'1', cardTo:'N', type:'non-identifying' });
+  }
+  refModal.hidden = true;
+  renderPanel(); renderSVG(); persist();
+  toast(`Vínculo criado: ${ent.name}.${attr.name} → ${tgtE.name}.${tgtA.name}`, '🔗');
+});
+document.getElementById('ref-attr').addEventListener('keydown', ev => { if (ev.key === 'Enter') document.getElementById('ref-add').click(); });
+
+/* ============================================================
+   HISTORY / PERSISTENCE
+   ============================================================ */
+function pushHistory(){
+  undoStack.push(JSON.stringify({ info: state.info, entities: state.entities, rels: state.rels }));
+  if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+  updateStatus();
+}
+function restore(json){
+  const d = JSON.parse(json);
+  state.info = d.info || { name:'', author:'', description:'' };
+  state.entities = d.entities || [];
+  state.rels = d.rels || [];
+  // ensure refs arrays exist
+  for (const e of state.entities) for (const a of e.attrs) if (!a.refs) a.refs = [];
+}
+function undo(){
+  if (!undoStack.length) return;
+  redoStack.push(JSON.stringify({ info: state.info, entities: state.entities, rels: state.rels }));
+  restore(undoStack.pop());
+  selection = null; multiSel.clear(); pendingRelFrom = null; pendingAttrFrom = null; drag = null; pan = null;
+  renderAll(); persist();
+}
+function redo(){
+  if (!redoStack.length) return;
+  undoStack.push(JSON.stringify({ info: state.info, entities: state.entities, rels: state.rels }));
+  restore(redoStack.pop());
+  selection = null; multiSel.clear(); pendingRelFrom = null; pendingAttrFrom = null; drag = null; pan = null;
+  renderAll(); persist();
+}
+let persistTimer = null;
+function persist(){
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    try { localStorage.setItem('merder-state', JSON.stringify({ info: state.info, entities: state.entities, rels: state.rels })); } catch(_){}
+  }, 300);
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function setTool(t){
+  tool = t;
+  pendingRelFrom = null;
+  pendingAttrFrom = null;
+  document.querySelectorAll('.tool[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+  svg.classList.toggle('tool-entity', t === 'entity');
+  svg.classList.toggle('tool-rel', t === 'rel');
+  svg.classList.toggle('tool-attrlink', t === 'attrlink');
+  svg.style.cursor = t === 'select' ? 'default' : 'crosshair';
+  const hints = {
+    select:'Arraste entidades · cada vínculo de atributo tem sua própria linha',
+    entity:'Clique no canvas para criar uma entidade',
+    rel:'Clique na entidade ORIGEM e depois na DESTINO',
+    attrlink:'Clique em um atributo de origem e depois no atributo de destino'
+  };
+  showHint(hints[t]);
+  renderSVG(); renderPreview(); updateStatus();
+}
+function showHint(text, duration){
+  hintEl.textContent = text;
+  hintEl.classList.add('show');
+  clearTimeout(hintEl._t);
+  hintEl._t = setTimeout(() => hintEl.classList.remove('show'), duration || 3400);
+}
+function createEntityAt(world){
+  pushHistory();
+  const e = {
+    id: uid(), name:'Nova_Entidade',
+    x: Math.round(world.x - 90), y: Math.round(world.y - 30),
+    color: PALETTE[state.entities.length % PALETTE.length],
+    type: 'strong', note: '',
+    attrs: [
+      { id: uid(), name:'id',   type:'INT',          pk:true,  fk:false, nn:true,  uq:false, refs:[] },
+      { id: uid(), name:'nome', type:'VARCHAR(100)', pk:false, fk:false, nn:false, uq:false, refs:[] }
+    ]
+  };
+  state.entities.push(e);
+  selection = { type:'entity', id: e.id };
+  multiSel.clear();
+  renderAll(); persist();
+  requestAnimationFrame(() => {
+    const inp = propsEl.querySelector('#ent-name');
+    if (inp){ inp.focus(); inp.select(); }
+  });
+}
+function createRel(fromId, toId){
+  pushHistory();
+  const r = { id: uid(), name:'relaciona', from: fromId, to: toId, cardFrom: '1', cardTo: 'N', type:'non-identifying' };
+  state.rels.push(r);
+  selection = { type:'rel', id: r.id };
+  multiSel.clear();
+  renderAll(); persist();
+}
+function addAttrRef(srcEntityId, srcAttrId, tgtEntityId, tgtAttrId){
+  const src = getEnt(srcEntityId);
+  if (!src) return;
+  const srcA = src.attrs.find(a => a.id === srcAttrId);
+  if (!srcA) return;
+  const tgt = getEnt(tgtEntityId);
+  const tgtA = tgt?.attrs.find(a => a.id === tgtAttrId);
+  if (!tgt || !tgtA) return;
+  if (!srcA.refs) srcA.refs = [];
+  if (srcA.refs.some(r => r.entityId === tgtEntityId && r.attrId === tgtAttrId)){
+    toast('Vínculo já existe', '⚠️');
+    return;
+  }
+  pushHistory();
+  srcA.refs.push({ entityId: tgtEntityId, attrId: tgtAttrId });
+  if (!srcA.fk) srcA.fk = true;
+  const exists = state.rels.some(r => (r.from === srcEntityId && r.to === tgtEntityId) || (r.from === tgtEntityId && r.to === srcEntityId));
+  if (!exists){
+    state.rels.push({ id: uid(), name:'relaciona', from: srcEntityId, to: tgtEntityId, cardFrom:'1', cardTo:'N', type:'non-identifying' });
+  }
+  renderAll(); persist();
+}
+function deleteSelection(){
+  if (!selection && !multiSel.size) return;
+  pushHistory();
+  const toDel = new Set(multiSel);
+  if (selection && selection.type === 'entity') toDel.add(selection.id);
+  if (toDel.size){
+    state.entities = state.entities.filter(x => !toDel.has(x.id));
+    state.rels = state.rels.filter(r => !toDel.has(r.from) && !toDel.has(r.to));
+    // clean refs to deleted entities
+    for (const e of state.entities) for (const a of e.attrs){
+      if (!a.refs) continue;
+      a.refs = a.refs.filter(r => !toDel.has(r.entityId));
+    }
+  }
+  if (selection && selection.type === 'rel'){
+    state.rels = state.rels.filter(x => x.id !== selection.id);
+  }
+  selection = null;
+  multiSel.clear();
+  renderAll(); persist();
+}
+function duplicateSelection(){
+  if (!selection || selection.type !== 'entity') return;
+  pushHistory();
+  const e = getEnt(selection.id);
+  if (!e) return;
+  const copy = JSON.parse(JSON.stringify(e));
+  copy.id = uid(); copy.name = e.name + '_copia';
+  copy.x = e.x + 40; copy.y = e.y + 40;
+  copy.attrs = copy.attrs.map(a => ({ ...a, id: uid(), refs: [] })); // refs not carried over
+  state.entities.push(copy);
+  selection = { type:'entity', id: copy.id };
+  multiSel.clear();
+  renderAll(); persist();
+}
+function copySelection(){
+  if (!selection) return;
+  if (selection.type === 'entity'){
+    const e = getEnt(selection.id);
+    if (!e) return;
+    clipboard = { type:'entity', data: JSON.parse(JSON.stringify(e)) };
+    updateStatus();
+    toast('Entidade copiada', '📋');
+  }
+}
+function pasteClipboard(){
+  if (!clipboard) return;
+  if (clipboard.type === 'entity'){
+    pushHistory();
+    const e = JSON.parse(JSON.stringify(clipboard.data));
+    e.id = uid(); e.name = e.name + '_copia';
+    e.x += 40; e.y += 40;
+    e.attrs = e.attrs.map(a => ({ ...a, id: uid(), refs: [] }));
+    state.entities.push(e);
+    selection = { type:'entity', id: e.id };
+    multiSel.clear();
+    renderAll(); persist();
+  }
+}
+function autoLayout(){
+  if (!state.entities.length) return;
+  pushHistory();
+  const n = state.entities.length;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+  const cellW = 360, cellH = 320, gapX = 60, gapY = 80;
+  state.entities.forEach((e, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    e.x = 60 + c * (cellW + gapX);
+    e.y = 60 + r * (cellH + gapY);
+  });
+  renderSVG(); persist();
+  toast('Layout reorganizado', '✨');
+  setTimeout(fitToScreen, 40);
+}
+function selectAll(){
+  if (!state.entities.length) return;
+  selection = state.entities.length ? { type:'entity', id: state.entities[0].id } : null;
+  multiSel = new Set(state.entities.slice(1).map(e => e.id));
+  renderPanel(); renderSVG(); updateStatus();
+}
+
+/* ============================================================
+   INTERACTION
+   ============================================================ */
+function screenToWorld(clientX, clientY){
+  const r = svg.getBoundingClientRect();
+  return { x: (clientX - r.left - view.x) / view.k, y: (clientY - r.top - view.y) / view.k };
+}
+function hitTest(clientX, clientY){
+  const el = document.elementFromPoint(clientX, clientY);
+  if (!el) return null;
+  const entEl = el.closest('[data-eid]');
+  if (entEl) return { type:'entity', id: entEl.dataset.eid };
+  const refEl = el.closest('[data-ref-key]');
+  if (refEl) return { type:'ref', key: refEl.dataset.refKey };
+  const relEl = el.closest('[data-rid]');
+  if (relEl) return { type:'rel', id: relEl.dataset.rid };
+  return null;
+}
+function hitAttribute(world){
+  for (let i = state.entities.length - 1; i >= 0; i--){
+    const e = state.entities[i];
+    const sz = entitySize(e);
+    if (world.x < e.x || world.x > e.x + sz.w) continue;
+    if (world.y < e.y + HEADER_H || world.y > e.y + sz.h) continue;
+    const relY = world.y - e.y - HEADER_H;
+    const idx = Math.floor(relY / ROW_H);
+    if (idx >= 0 && idx < e.attrs.length) return { entity: e, attr: e.attrs[idx], attrIndex: idx };
+  }
+  return null;
+}
+
+function onPointerDown(ev){
+  if (ev.button !== 0 && ev.button !== 1) return;
+  try { svg.setPointerCapture(ev.pointerId); } catch(_){}
+  const world = screenToWorld(ev.clientX, ev.clientY);
+
+  if (ev.button === 1 || spaceDown || (ev.altKey && ev.button === 0)){
+    pan = { startX: ev.clientX, startY: ev.clientY, vx: view.x, vy: view.y };
+    svg.classList.add('panning'); ev.preventDefault(); return;
+  }
+
+  const hit = hitTest(ev.clientX, ev.clientY);
+
+  if (tool === 'entity'){
+    if (hit && hit.type === 'entity'){ selection = hit; multiSel.clear(); renderPanel(); renderSVG(); }
+    else createEntityAt(world);
+    return;
+  }
+  if (tool === 'rel'){
+    if (hit && hit.type === 'entity'){
+      const id = hit.id;
+      if (!pendingRelFrom){
+        pendingRelFrom = id; renderSVG(); renderPreview();
+        showHint('Agora clique na entidade de DESTINO', 5000);
+      } else {
+        const from = pendingRelFrom;
+        pendingRelFrom = null;
+        setTool('select');
+        createRel(from, id);
+      }
+    } else { pendingRelFrom = null; renderSVG(); renderPreview(); }
+    return;
+  }
+  if (tool === 'attrlink'){
+    const ah = hitAttribute(world);
+    if (ah){
+      if (!pendingAttrFrom){
+        pendingAttrFrom = { entityId: ah.entity.id, attrId: ah.attr.id };
+        renderSVG(); renderPreview();
+        showHint(`"${ah.attr.name}" selecionado — clique no atributo destino`, 6000);
+      } else {
+        const from = pendingAttrFrom;
+        if (from.entityId === ah.entity.id && from.attrId === ah.attr.id){
+          pendingAttrFrom = null; renderSVG(); renderPreview(); return;
+        }
+        pendingAttrFrom = null;
+        setTool('select');
+        addAttrRef(from.entityId, from.attrId, ah.entity.id, ah.attr.id);
+        toast('Vínculo criado', '🔗');
+      }
+    } else { pendingAttrFrom = null; renderSVG(); renderPreview(); }
+    return;
+  }
+
+  // Select tool
+  if (hit && hit.type === 'entity'){
+    const e = getEnt(hit.id);
+    if (ev.shiftKey){
+      if (multiSel.has(e.id)) multiSel.delete(e.id);
+      else if (!selection || selection.id !== e.id) multiSel.add(e.id);
+    } else {
+      if (!multiSel.has(e.id) && (!selection || selection.id !== e.id || selection.type !== 'entity')){
+        multiSel.clear();
+      }
+      selection = { type:'entity', id: e.id };
+    }
+    renderPanel(); renderSVG(); updateStatus();
+    const ids = [e.id, ...Array.from(multiSel)];
+    const startPositions = {};
+    for (const id of ids){ const en = getEnt(id); if (en) startPositions[id] = { x: en.x, y: en.y }; }
+    drag = { ids, startWorld: world, startPositions, moved: false };
+    return;
+  }
+  if (hit && hit.type === 'ref'){
+    // select the source entity and its attribute
+    const el = document.querySelector(`[data-ref-key="${CSS.escape(hit.key)}"]`);
+    if (el){
+      const sid = el.dataset.refSrcE, said = el.dataset.refSrcA;
+      selection = { type:'entity', id: sid };
+      multiSel.clear();
+      renderPanel(); renderSVG();
+      // highlight and scroll to attribute
+      setTimeout(() => {
+        const row = propsEl.querySelector(`.attr-row [data-ai][data-k="name"]`);
+        // find via id matching? simpler: skip
+      }, 50);
+    }
+    return;
+  }
+  if (hit && hit.type === 'rel'){
+    selection = hit; multiSel.clear(); renderPanel(); renderSVG(); return;
+  }
+
+  selection = null; multiSel.clear(); pendingRelFrom = null; pendingAttrFrom = null;
+  renderPanel(); renderSVG(); renderPreview();
+  pan = { startX: ev.clientX, startY: ev.clientY, vx: view.x, vy: view.y };
+  svg.classList.add('panning');
+}
+
+function onPointerMove(ev){
+  mouseWorld = screenToWorld(ev.clientX, ev.clientY);
+  if (pan){
+    view.x = pan.vx + (ev.clientX - pan.startX);
+    view.y = pan.vy + (ev.clientY - pan.startY);
+    applyView(); return;
+  }
+  if (drag){
+    if (!drag.moved){ pushHistory(); drag.moved = true; }
+    let dx = mouseWorld.x - drag.startWorld.x;
+    let dy = mouseWorld.y - drag.startWorld.y;
+    if (ev.shiftKey || snapToGrid){ dx = Math.round(dx/20)*20; dy = Math.round(dy/20)*20; }
+    for (const id of drag.ids){
+      const e = getEnt(id);
+      const sp = drag.startPositions[id];
+      if (e && sp){ e.x = Math.round(sp.x + dx); e.y = Math.round(sp.y + dy); }
+    }
+    renderSVG(); return;
+  }
+  if ((tool === 'rel' && pendingRelFrom) || (tool === 'attrlink' && pendingAttrFrom)){
+    renderPreview(); return;
+  }
+  // hover detection for attribute refs
+  const hit = hitTest(ev.clientX, ev.clientY);
+  const newHover = (hit && hit.type === 'ref') ? hit.key : null;
+  if (newHover !== hoveredRef){
+    hoveredRef = newHover;
+    attrRefLayer.innerHTML = renderAttrRefs();
+  }
+}
+
+function onPointerUp(ev){
+  if (drag && drag.moved) persist();
+  drag = null; pan = null;
+  svg.classList.remove('panning');
+  svg.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+  try { svg.releasePointerCapture(ev.pointerId); } catch(_){}
+}
+
+svg.addEventListener('pointerdown', onPointerDown);
+svg.addEventListener('pointermove', onPointerMove);
+svg.addEventListener('pointerup', onPointerUp);
+svg.addEventListener('pointercancel', onPointerUp);
+
+svg.addEventListener('dblclick', ev => {
+  const hit = hitTest(ev.clientX, ev.clientY);
+  if (hit && hit.type === 'entity'){
+    selection = hit; multiSel.clear(); renderPanel();
+    requestAnimationFrame(() => {
+      const inp = propsEl.querySelector('#ent-name');
+      if (inp){ inp.focus(); inp.select(); }
+    });
+    return;
+  }
+  if (tool === 'rel' || tool === 'attrlink') return;
+  createEntityAt(screenToWorld(ev.clientX, ev.clientY));
+});
+
+svg.addEventListener('wheel', ev => {
+  ev.preventDefault();
+  const r = svg.getBoundingClientRect();
+  const sx = ev.clientX - r.left, sy = ev.clientY - r.top;
+  const factor = ev.deltaY < 0 ? 1.12 : 0.89;
+  const k2 = clamp(view.k * factor, 0.15, 4), f = k2 / view.k;
+  view.x = sx - (sx - view.x) * f;
+  view.y = sy - (sy - view.y) * f;
+  view.k = k2;
+  applyView();
+}, { passive: false });
+
+window.addEventListener('keydown', ev => {
+  const tag = (ev.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+  if (ev.code === 'Space' && !typing){ spaceDown = true; svg.style.cursor = 'grab'; ev.preventDefault(); return; }
+  const mod = ev.ctrlKey || ev.metaKey;
+  if (mod && !ev.shiftKey && ev.key.toLowerCase() === 'z' && !typing){ ev.preventDefault(); undo(); return; }
+  if (mod && (ev.key.toLowerCase() === 'y' || (ev.shiftKey && ev.key.toLowerCase() === 'z')) && !typing){ ev.preventDefault(); redo(); return; }
+  if (mod && ev.key.toLowerCase() === 's'){ ev.preventDefault(); exportJSON(); return; }
+  if (mod && ev.key.toLowerCase() === 'o'){ ev.preventDefault(); document.getElementById('btn-import').click(); return; }
+  if (mod && ev.key.toLowerCase() === 'n'){ ev.preventDefault(); document.getElementById('btn-new').click(); return; }
+  if (mod && ev.key.toLowerCase() === 'p'){ ev.preventDefault(); openTemplates(); return; }
+  if (mod && ev.key.toLowerCase() === 'a' && !typing){ ev.preventDefault(); selectAll(); return; }
+  if (mod && ev.key.toLowerCase() === 'c' && !typing){ ev.preventDefault(); copySelection(); return; }
+  if (mod && ev.key.toLowerCase() === 'v' && !typing){ ev.preventDefault(); pasteClipboard(); return; }
+  if (mod && ev.key.toLowerCase() === 'd' && !typing){ ev.preventDefault(); duplicateSelection(); return; }
+  if (typing) return;
+  if (ev.key === 'v' || ev.key === 'V') setTool('select');
+  if (ev.key === 'e' || ev.key === 'E') setTool('entity');
+  if (ev.key === 'r' || ev.key === 'R') setTool('rel');
+  if (ev.key === 'a' || ev.key === 'A') setTool('attrlink');
+  if (ev.key === 'f' || ev.key === 'F') fitToScreen();
+  if (ev.key === 'z' || ev.key === 'Z') zoomToSelection();
+  if (ev.key === 'g' || ev.key === 'G') toggleGrid();
+  if (ev.key === '?'){ ev.preventDefault(); openHelp(); }
+  if (ev.key === 'Delete' || ev.key === 'Backspace'){ ev.preventDefault(); deleteSelection(); }
+  if (ev.key === 'Escape'){
+    if (pendingRelFrom || pendingAttrFrom){ pendingRelFrom = null; pendingAttrFrom = null; renderSVG(); renderPreview(); }
+    else if (tool !== 'select') setTool('select');
+    else if (selection || multiSel.size){ selection = null; multiSel.clear(); renderPanel(); renderSVG(); updateStatus(); }
+  }
+});
+window.addEventListener('keyup', ev => {
+  if (ev.code === 'Space'){ spaceDown = false; svg.style.cursor = tool === 'select' ? 'default' : 'crosshair'; }
+});
+
+/* ============================================================
+   ZOOM / FIT / GRID / THEME
+   ============================================================ */
+function fitToScreen(){
+  if (!state.entities.length){ view.x = 0; view.y = 0; view.k = 1; applyView(); return; }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const e of state.entities){
+    const s = entitySize(e);
+    if (e.x < minX) minX = e.x;
+    if (e.y < minY) minY = e.y;
+    if (e.x + s.w > maxX) maxX = e.x + s.w;
+    if (e.y + s.h > maxY) maxY = e.y + s.h;
+  }
+  minX -= 160; minY -= 100; maxX += 160; maxY += 100;
+  const r = svg.getBoundingClientRect();
+  const pad = 40;
+  const k = clamp(Math.min((r.width - pad*2) / (maxX - minX), (r.height - pad*2) / (maxY - minY)), 0.15, 1.4);
+  view.k = k;
+  view.x = (r.width - (maxX - minX) * k) / 2 - minX * k;
+  view.y = (r.height - (maxY - minY) * k) / 2 - minY * k;
+  applyView();
+}
+function zoomToSelection(){
+  if (!selection) return;
+  let e = null;
+  if (selection.type === 'entity') e = getEnt(selection.id);
+  else if (selection.type === 'rel'){ const r = getRel(selection.id); if (r) e = getEnt(r.from); }
+  if (!e) return;
+  const s = entitySize(e);
+  const r = svg.getBoundingClientRect();
+  const k = clamp(Math.min(r.width / (s.w + 400), r.height / (s.h + 400)), 0.4, 1.6);
+  view.k = k;
+  view.x = r.width/2 - (e.x + s.w/2) * k;
+  view.y = r.height/2 - (e.y + s.h/2) * k;
+  applyView();
+}
+function toggleGrid(){
+  showGrid = !showGrid;
+  document.getElementById('bg-sm').style.display = showGrid ? '' : 'none';
+  document.getElementById('bg-lg').style.display = showGrid ? '' : 'none';
+  document.getElementById('sbtn-grid').classList.toggle('on', showGrid);
+}
+function toggleTheme(){
+  theme = theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('merder-theme', theme); } catch(_){}
+}
+function toggleAttrRefs(){
+  showAttrRefs = !showAttrRefs;
+  document.getElementById('sbtn-attrref').classList.toggle('on', showAttrRefs);
+  renderSVG();
+}
+
+document.getElementById('tool-fit').addEventListener('click', fitToScreen);
+document.getElementById('tool-zoom-sel').addEventListener('click', zoomToSelection);
+document.getElementById('sbtn-grid').addEventListener('click', toggleGrid);
+document.getElementById('sbtn-attrref').addEventListener('click', toggleAttrRefs);
+document.getElementById('sbtn-snap').addEventListener('click', () => {
+  snapToGrid = !snapToGrid;
+  document.getElementById('sbtn-snap').classList.toggle('on', snapToGrid);
+});
+document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+document.getElementById('z-in').addEventListener('click', () => {
+  const r = svg.getBoundingClientRect();
+  const k2 = clamp(view.k * 1.15, 0.15, 4), f = k2 / view.k;
+  view.x = r.width/2 - (r.width/2 - view.x) * f;
+  view.y = r.height/2 - (r.height/2 - view.y) * f;
+  view.k = k2; applyView();
+});
+document.getElementById('z-out').addEventListener('click', () => {
+  const r = svg.getBoundingClientRect();
+  const k2 = clamp(view.k * 0.87, 0.15, 4), f = k2 / view.k;
+  view.x = r.width/2 - (r.width/2 - view.x) * f;
+  view.y = r.height/2 - (r.height/2 - view.y) * f;
+  view.k = k2; applyView();
+});
+document.getElementById('z-reset').addEventListener('click', () => { view.x = 0; view.y = 0; view.k = 1; applyView(); });
+
+/* ============================================================
+   TEMPLATES MODAL
+   ============================================================ */
+const tplModal = document.getElementById('tpl-modal');
+const tplGrid = document.getElementById('tpl-grid');
+const tplCats = document.getElementById('tpl-cats');
+const CATS = [
+  { id:'todos', label:'Todos' }, { id:'negocios', label:'Negócios' },
+  { id:'educacao', label:'Educação' }, { id:'saude', label:'Saúde' },
+  { id:'servicos', label:'Serviços' }, { id:'tecnologia', label:'Tecnologia' }
+];
+function loadFavs(){ try { const f = JSON.parse(localStorage.getItem('merder-favs') || '[]'); tplFavs = new Set(f); } catch(_){} }
+function saveFavs(){ try { localStorage.setItem('merder-favs', JSON.stringify([...tplFavs])); } catch(_){} }
+function renderTemplates(){
+  tplCats.innerHTML = CATS.map(c =>
+    `<button class="tpl-cat ${c.id === currentTplCat ? 'active' : ''}" data-cat="${c.id}">${c.label}</button>`).join('')
+    + `<button class="tpl-cat ${currentTplCat === 'favoritos' ? 'active' : ''}" data-cat="favoritos">★ Favoritos (${tplFavs.size})</button>`;
+  let list = TEMPLATES;
+  if (currentTplCat === 'favoritos') list = TEMPLATES.filter(t => tplFavs.has(t.id));
+  else if (currentTplCat !== 'todos') list = TEMPLATES.filter(t => t.cat === currentTplCat);
+  if (tplSearch){
+    const q = tplSearch.toLowerCase();
+    list = list.filter(t => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q));
+  }
+  document.getElementById('tpl-count').textContent = list.length + (list.length === 1 ? ' modelo' : ' modelos');
+  tplGrid.innerHTML = list.map(t => {
+    const preview = t.build();
+    const refs = preview.entities.reduce((s,e) => s + e.attrs.reduce((x,a) => x + ((a.refs||[]).length), 0), 0);
+    const isFav = tplFavs.has(t.id);
+    return `<div class="tpl-card" data-tpl="${t.id}">
+      <button class="fav-btn ${isFav ? 'on' : ''}" data-fav="${t.id}">${isFav ? '★' : '☆'}</button>
+      <div class="tpl-head">
+        <div class="tpl-icon">${t.icon}</div>
+        <div><div class="tpl-title">${esc(t.name)}</div><div class="tpl-sub">${CATS.find(c => c.id === t.cat)?.label || 'Modelo'}</div></div>
+      </div>
+      <div class="tpl-desc">${esc(t.desc)}</div>
+      <div class="tpl-stats">
+        <span><b>${preview.entities.length}</b> ent.</span>
+        <span style="color:#38bdf8"><b>${refs}</b> 🔗</span>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty" style="grid-column:1/-1">Nenhum modelo encontrado.</div>';
+  tplCats.querySelectorAll('.tpl-cat').forEach(b => b.addEventListener('click', () => { currentTplCat = b.dataset.cat; renderTemplates(); }));
+  tplGrid.querySelectorAll('.tpl-card').forEach(card => {
+    card.addEventListener('click', ev => {
+      if (ev.target.closest('[data-fav]')) return;
+      const t = TEMPLATES.find(x => x.id === card.dataset.tpl);
+      if (!t) return;
+      if (state.entities.length && !confirm(`Carregar "${t.name}"?\nO modelo atual será substituído.`)) return;
+      pushHistory();
+      const built = t.build();
+      state.entities = built.entities;
+      state.rels = built.rels;
+      selection = null; multiSel.clear(); pendingRelFrom = null; pendingAttrFrom = null;
+      view.x = 0; view.y = 0; view.k = 1;
+      tplModal.hidden = true;
+      renderAll(); persist();
+      setTimeout(fitToScreen, 50);
+      toast(`Modelo "${t.name}" carregado`, '✨');
+    });
+  });
+  tplGrid.querySelectorAll('[data-fav]').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const id = btn.dataset.fav;
+      if (tplFavs.has(id)) tplFavs.delete(id); else tplFavs.add(id);
+      saveFavs(); renderTemplates();
+    });
+  });
+}
+document.getElementById('tpl-search-input').addEventListener('input', ev => { tplSearch = ev.target.value.trim(); renderTemplates(); document.getElementById('tpl-search-input').focus(); });
+function openTemplates(){ loadFavs(); renderTemplates(); tplModal.hidden = false; setTimeout(() => document.getElementById('tpl-search-input').focus(), 50); }
+document.getElementById('btn-templates').addEventListener('click', openTemplates);
+document.getElementById('tpl-close').addEventListener('click', () => tplModal.hidden = true);
+tplModal.addEventListener('mousedown', ev => { if (ev.target === tplModal) tplModal.hidden = true; });
+document.getElementById('empty-templates').addEventListener('click', openTemplates);
+document.getElementById('empty-entity').addEventListener('click', () => {
+  const r = svg.getBoundingClientRect();
+  createEntityAt(screenToWorld(r.left + r.width/2, r.top + r.height/2));
+});
+
+/* ============================================================
+   INFO / STATS / HELP
+   ============================================================ */
+const infoModal = document.getElementById('info-modal');
+const statsModal = document.getElementById('stats-modal');
+const helpModal = document.getElementById('help-modal');
+document.getElementById('btn-info').addEventListener('click', () => {
+  document.getElementById('info-name').value = state.info.name || '';
+  document.getElementById('info-author').value = state.info.author || '';
+  document.getElementById('info-desc').value = state.info.description || '';
+  infoModal.hidden = false;
+});
+document.getElementById('info-close').addEventListener('click', () => infoModal.hidden = true);
+infoModal.addEventListener('mousedown', ev => { if (ev.target === infoModal) infoModal.hidden = true; });
+document.getElementById('info-save').addEventListener('click', () => {
+  pushHistory();
+  state.info.name = document.getElementById('info-name').value;
+  state.info.author = document.getElementById('info-author').value;
+  state.info.description = document.getElementById('info-desc').value;
+  persist(); infoModal.hidden = true;
+  toast('Informações salvas', '✓');
+});
+function renderStats(){
+  const ne = state.entities.length, na = state.entities.reduce((s,e) => s + e.attrs.length, 0);
+  const nc = countRefs();
+  const byType = { strong:0, weak:0, assoc:0 };
+  state.entities.forEach(e => { byType[e.type || 'strong']++; });
+  const entitiesWithRefs = state.entities.filter(e => e.attrs.some(a => a.refs && a.refs.length)).length;
+  const topRefs = [...state.entities].map(e => ({ e, n: e.attrs.reduce((s,a) => s + ((a.refs||[]).length), 0) }))
+    .filter(x => x.n > 0).sort((a,b) => b.n - a.n).slice(0, 8);
+  const maxRefs = Math.max(1, ...topRefs.map(x => x.n));
+
+  document.getElementById('stats-body').innerHTML = `
+    <div class="info-grid">
+      <div class="info-cell"><div class="lbl">Entidades</div><div class="val">${ne}</div></div>
+      <div class="info-cell"><div class="lbl">Atributos</div><div class="val">${na}</div></div>
+      <div class="info-cell"><div class="lbl">🔗 Vínculos de atributo</div><div class="val">${nc}</div></div>
+      <div class="info-cell"><div class="lbl">Relacionamentos</div><div class="val">${state.rels.length}</div></div>
+      <div class="info-cell"><div class="lbl">Ent. com vínculos</div><div class="val">${entitiesWithRefs}</div></div>
+      <div class="info-cell"><div class="lbl">Fracas / Assoc</div><div class="val">${byType.weak}/${byType.assoc}</div></div>
+    </div>
+    <div class="stat-list">
+      <h4 style="margin:20px 0 12px;font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.7px">Entidades com mais vínculos</h4>
+      ${topRefs.map(x => `<div class="stat-row">
+        <span class="dot" style="width:10px;height:10px;border-radius:50%;background:${x.e.color};flex-shrink:0"></span>
+        <span class="lbl" style="min-width:140px">${esc(x.e.name)}</span>
+        <div class="bar"><div style="width:${Math.round(x.n/maxRefs*100)}%;background:linear-gradient(90deg,#38bdf8,#6366f1)"></div></div>
+        <span class="num">${x.n}</span>
+      </div>`).join('') || '<div class="empty">Nenhum vínculo ainda.</div>'}
+    </div>
+  `;
+}
+document.getElementById('btn-stats').addEventListener('click', () => { renderStats(); statsModal.hidden = false; });
+document.getElementById('stats-close').addEventListener('click', () => statsModal.hidden = true);
+statsModal.addEventListener('mousedown', ev => { if (ev.target === statsModal) statsModal.hidden = true; });
+function openHelp(){ helpModal.hidden = false; }
+document.getElementById('btn-help').addEventListener('click', openHelp);
+document.getElementById('help-close').addEventListener('click', () => helpModal.hidden = true);
+helpModal.addEventListener('mousedown', ev => { if (ev.target === helpModal) helpModal.hidden = true; });
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function buildSVGString(){
+  const pad = 60;
+  let minX = 0, minY = 0, maxX = 800, maxY = 600;
+  if (state.entities.length){
+    minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
+    for (const e of state.entities){
+      const s = entitySize(e);
+      minX = Math.min(minX, e.x); minY = Math.min(minY, e.y);
+      maxX = Math.max(maxX, e.x + s.w); maxY = Math.max(maxY, e.y + s.h);
+    }
+    minX -= 160; minY -= 100; maxX += 160; maxY += 100;
+  }
+  const w = Math.max(200, maxX - minX + pad), h = Math.max(200, maxY - minY + pad);
+  const ox = -minX + pad/2, oy = -minY + pad/2;
+  const savedSel = selection, savedPend = pendingRelFrom, savedAttr = pendingAttrFrom, savedMulti = new Set(multiSel), savedHover = hoveredRef;
+  selection = null; pendingRelFrom = null; pendingAttrFrom = null; multiSel = new Set(); hoveredRef = null;
+  const relsStr = state.rels.map(renderRel).join('');
+  const entsStr = state.entities.map(renderEntity).join('');
+  const refsStr = renderAttrRefs();
+  selection = savedSel; pendingRelFrom = savedPend; pendingAttrFrom = savedAttr; multiSel = savedMulti; hoveredRef = savedHover;
+
+  const bgFill = theme === 'light' ? '#f3f5fa' : '#0a0f1c';
+  const textCol = theme === 'light' ? '#0f172a' : '#e6edf7';
+  const entBg = theme === 'light' ? '#ffffff' : '#131c2e';
+  const entRow = theme === 'light' ? '#e8edf5' : '#1e2b45';
+  const diaBg = theme === 'light' ? '#f1f5f9' : '#182236';
+  const border = theme === 'light' ? '#cbd5e1' : '#2b3a55';
+  const relLine = theme === 'light' ? '#94a3b8' : '#5c6d88';
+  const clean = s => s.replace(/var\(--ent-bg\)/g, entBg).replace(/var\(--ent-row\)/g, entRow)
+    .replace(/var\(--diamond\)/g, diaBg).replace(/var\(--rel-line\)/g, relLine)
+    .replace(/var\(--text\)/g, textCol).replace(/var\(--muted\)/g, theme === 'light' ? '#64748b' : '#8b9bb4')
+    .replace(/var\(--border2\)/g, border);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+<defs>
+  <marker id="arrow-marker" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+  </marker>
+</defs>
+<rect width="${w}" height="${h}" fill="${bgFill}"/>
+<g transform="translate(${ox},${oy})">${clean(relsStr)}${clean(entsStr)}${clean(refsStr)}</g>
+</svg>`;
+}
+function download(filename, content, mime){
+  const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+}
+function exportJSON(){
+  download('modelo-mer-der.json',
+    JSON.stringify({ app:'MER/DER Studio', version:6, info: state.info, entities: state.entities, rels: state.rels }, null, 2),
+    'application/json');
+  toast('Modelo exportado', '💾');
+}
+function exportSVG(){ download('diagrama-mer-der.svg', buildSVGString(), 'image/svg+xml;charset=utf-8'); toast('SVG exportado', '🖼️'); }
+function exportPNG(){
+  const svgStr = buildSVGString();
+  const m = svgStr.match(/width="(\d+)" height="(\d+)"/);
+  const w = m ? +m[1] : 800, h = m ? +m[2] : 600;
+  const scale = 2;
+  const img = new Image();
+  const url = URL.createObjectURL(new Blob([svgStr], { type:'image/svg+xml;charset=utf-8' }));
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = w * scale; cv.height = h * scale;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = theme === 'light' ? '#f3f5fa' : '#0a0f1c';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b => {
+      const u = URL.createObjectURL(b);
+      const a = document.createElement('a'); a.href = u; a.download = 'diagrama-mer-der.png';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(u); }, 200);
+    }, 'image/png');
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); alert('Não foi possível gerar o PNG.'); };
+  img.src = url;
+}
+function exportMermaid(){
+  const lines = ['erDiagram'];
+  const safeId = s => (s || 'T').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+  for (const e of state.entities){
+    lines.push(`  ${safeId(e.name)} {`);
+    for (const a of e.attrs){
+      const type = (a.type || 'string').replace(/[^A-Za-z0-9_()]/g, '').toLowerCase() || 'string';
+      let keyTag = '';
+      if (a.pk) keyTag = 'PK';
+      else if (a.fk) keyTag = 'FK';
+      else if (a.uq) keyTag = 'UK';
+      const name = (a.name || 'field').replace(/\s+/g, '_');
+      lines.push(keyTag ? `    ${type} ${name} ${keyTag}` : `    ${type} ${name}`);
+    }
+    lines.push('  }');
+  }
+  // build from attr refs
+  const seen = new Set();
+  for (const e of state.entities){
+    for (const a of e.attrs){
+      if (!a.refs) continue;
+      for (const ref of a.refs){
+        const t = getEnt(ref.entityId);
+        if (!t) continue;
+        const ta = t.attrs.find(x => x.id === ref.attrId);
+        if (!ta) continue;
+        const cardMap = { '1':'||', 'N':'}o', '0..1':'|o', '0..N':'}o', '1..N':'}|' };
+        const card = a.fk ? '}o' : '||';
+        const key = `${e.id}|${t.id}|${a.id}|${ta.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        lines.push(`  ${safeId(t.name)} ||--${card} ${safeId(e.name)} : ${a.name.replace(/\s+/g,'_')}`);
+      }
+    }
+  }
+  openModal('Mermaid ER Diagram', lines.join('\n'), 'diagrama.mmd', 'text/plain');
+}
+function exportDBML(){
+  const L = [];
+  L.push(`// DBML gerado por MER/DER Studio`);
+  if (state.info.name) L.push(`// Projeto: ${state.info.name}`);
+  if (state.info.author) L.push(`// Autor: ${state.info.author}`);
+  L.push('');
+  const tname = e => (e.name || 'tabela').replace(/\s+/g, '_');
+  for (const e of state.entities){
+    L.push(`Table ${tname(e)} {`);
+    for (const a of e.attrs){
+      let attrs = [];
+      if (a.pk) attrs.push('pk');
+      if (a.uq) attrs.push('unique');
+      if (a.nn) attrs.push('not null');
+      L.push(`  ${a.name} ${(a.type || 'varchar').toLowerCase()}${attrs.length ? ' [' + attrs.join(', ') + ']' : ''}`);
+    }
+    if (e.note) L.push(`  Note: '${e.note.replace(/'/g, "''")}'`);
+    L.push('}'); L.push('');
+  }
+  for (const e of state.entities){
+    for (const a of e.attrs){
+      if (!a.refs) continue;
+      for (const ref of a.refs){
+        const t = getEnt(ref.entityId);
+        if (!t) continue;
+        const ta = t.attrs.find(x => x.id === ref.attrId);
+        if (!ta) continue;
+        L.push(`Ref: ${tname(e)}.${a.name} > ${tname(t)}.${ta.name}`);
+      }
+    }
+  }
+  openModal('DBML', L.join('\n'), 'modelo.dbml', 'text/plain');
+}
+
+/* ============================================================
+   SQL GENERATOR (uses attribute refs)
+   ============================================================ */
+const DIALECTS = [
+  { id:'mysql', label:'MySQL' }, { id:'postgres', label:'PostgreSQL' },
+  { id:'sqlite', label:'SQLite' }, { id:'sqlserver', label:'SQL Server' },
+  { id:'generic', label:'Genérico' }
+];
+const D_OPT = {
+  mysql:     { autoInc:'AUTO_INCREMENT', bool:'TINYINT(1)', text:'TEXT', dt:'DATETIME', suffix:' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4', sepFk:true },
+  postgres:  { autoInc:'GENERATED BY DEFAULT AS IDENTITY', bool:'BOOLEAN', text:'TEXT', dt:'TIMESTAMP', suffix:'', sepFk:true },
+  sqlite:    { autoInc:'AUTOINCREMENT', bool:'INTEGER', text:'TEXT', dt:'TEXT', suffix:'', sepFk:false },
+  sqlserver: { autoInc:'IDENTITY(1,1)', bool:'BIT', text:'NVARCHAR(MAX)', dt:'DATETIME2', suffix:'', sepFk:true },
+  generic:   { autoInc:'', bool:'BOOLEAN', text:'TEXT', dt:'TIMESTAMP', suffix:'', sepFk:true }
+};
+function mapType(t, dialect){
+  const o = D_OPT[dialect] || D_OPT.generic;
+  if (!t) return 'VARCHAR(255)';
+  const u = t.toUpperCase();
+  if (/^BOOLEAN/.test(u)) return o.bool;
+  if (/^TEXT/.test(u)) return o.text;
+  if (/^DATETIME|^TIMESTAMP/.test(u)) return o.dt;
+  if (/^INT\b/.test(u) && dialect === 'postgres') return 'INTEGER';
+  return t;
+}
+function generateSQL(dialect){
+  dialect = dialect || 'mysql';
+  const o = D_OPT[dialect] || D_OPT.generic;
+  const L = [];
+  const now = new Date().toLocaleString('pt-BR');
+  const tname = e => (e.name || 'tabela').replace(/\s+/g, '_');
+  const cname = s => (s || '').toLowerCase().replace(/\s+/g, '_');
+  const isMySQL = dialect === 'mysql';
+  const isSQLite = dialect === 'sqlite';
+  const q = n => isMySQL ? '`' + n + '`' : '"' + n + '"';
+
+  L.push('-- ============================================================');
+  L.push(`-- Script SQL — ${dialect.toUpperCase()}`);
+  L.push('-- Gerado por MER/DER Studio');
+  if (state.info.name) L.push('-- Projeto: ' + state.info.name);
+  if (state.info.author) L.push('-- Autor: ' + state.info.author);
+  L.push('-- Gerado em: ' + now);
+  L.push('-- ============================================================');
+  L.push('');
+  if (!state.entities.length){ L.push('-- Nenhuma entidade no modelo.'); return L.join('\n'); }
+
+  if (isMySQL){
+    L.push('SET FOREIGN_KEY_CHECKS = 0;'); L.push('');
+    for (const e of state.entities) L.push(`DROP TABLE IF EXISTS ${q(tname(e))};`);
+    L.push('');
+  } else if (isSQLite){
+    L.push('PRAGMA foreign_keys = OFF;'); L.push('');
+    for (const e of state.entities) L.push(`DROP TABLE IF EXISTS ${q(tname(e))};`);
+    L.push('');
+  } else if (dialect === 'postgres'){
+    for (const e of state.entities) L.push(`DROP TABLE IF EXISTS ${q(tname(e))} CASCADE;`);
+    L.push('');
+  }
+
+  // CREATE TABLE
+  for (const e of state.entities){
+    const cols = [];
+    const pkCols = e.attrs.filter(a => a.pk).map(a => a.name);
+    for (const a of e.attrs){
+      const tp = mapType(a.type, dialect);
+      let def = `  ${q(a.name)} ${tp}`;
+      if (a.pk && o.autoInc && /INT/i.test(tp)) def += ' ' + o.autoInc;
+      if (a.pk || a.nn) def += ' NOT NULL';
+      if (a.uq && !a.pk) def += ' UNIQUE';
+      cols.push(def);
+    }
+    if (pkCols.length) cols.push(`  PRIMARY KEY (${pkCols.map(q).join(', ')})`);
+    if (isSQLite){
+      // inline FK for SQLite
+      const fkLines = [];
+      for (const a of e.attrs){
+        if (!a.refs || !a.refs.length) continue;
+        for (const ref of a.refs){
+          const t = getEnt(ref.entityId);
+          const ta = t?.attrs.find(x => x.id === ref.attrId);
+          if (!t || !ta) continue;
+          fkLines.push(`  FOREIGN KEY (${q(a.name)}) REFERENCES ${q(tname(t))} (${q(ta.name)})`);
+        }
+      }
+      for (const fl of fkLines) cols.push(fl);
+    }
+    L.push(`-- Entidade: ${e.name}${e.note ? '  // ' + e.note : ''}`);
+    L.push(`CREATE TABLE ${q(tname(e))} (`);
+    L.push(cols.join(',\n'));
+    L.push(')' + (isMySQL ? o.suffix : '') + ';');
+    L.push('');
+  }
+
+  // FK constraints from attribute refs
+  if (o.sepFk){
+    const fkLines = [];
+    const seen = new Set();
+    for (const e of state.entities){
+      for (const a of e.attrs){
+        if (!a.refs || !a.refs.length) continue;
+        for (const ref of a.refs){
+          const t = getEnt(ref.entityId);
+          if (!t) continue;
+          const ta = t.attrs.find(x => x.id === ref.attrId);
+          if (!ta) continue;
+          const key = `${e.id}|${a.id}|${t.id}|${ta.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          fkLines.push(`ALTER TABLE ${q(tname(e))} ADD CONSTRAINT fk_${cname(e.name)}_${cname(a.name)}\n  FOREIGN KEY (${q(a.name)}) REFERENCES ${q(tname(t))} (${q(ta.name)});`);
+        }
+      }
+    }
+    if (fkLines.length){
+      L.push('-- ============================================================');
+      L.push('-- Chaves estrangeiras (a partir dos vínculos de atributo)');
+      L.push('-- ============================================================');
+      L.push(fkLines.join('\n'));
+      L.push('');
+    }
+  }
+  if (isMySQL) L.push('SET FOREIGN_KEY_CHECKS = 1;');
+  if (isSQLite) L.push('PRAGMA foreign_keys = ON;');
+  L.push('-- Fim do script.');
+  return L.join('\n');
+}
+
+/* ============================================================
+   GENERIC MODAL
+   ============================================================ */
+const modal = document.getElementById('modal');
+let modalFilename = 'output.txt';
+function openModal(title, text, filename, mime){
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').value = text;
+  modalFilename = filename || 'output.txt';
+  modal._mime = mime || 'text/plain;charset=utf-8';
+  modal.hidden = false;
+}
+function openSQL(){
+  const bar = document.getElementById('dialect-bar');
+  bar.innerHTML = DIALECTS.map(d => `<button class="tpl-cat ${d.id === currentDialect ? 'active' : ''}" data-dialect="${d.id}">${d.label}</button>`).join('');
+  bar.querySelectorAll('[data-dialect]').forEach(b => {
+    b.addEventListener('click', () => {
+      currentDialect = b.dataset.dialect;
+      bar.querySelectorAll('[data-dialect]').forEach(x => x.classList.toggle('active', x.dataset.dialect === currentDialect));
+      document.getElementById('modal-text').value = generateSQL(currentDialect);
+    });
+  });
+  document.getElementById('modal-title').textContent = 'Script SQL — ' + (DIALECTS.find(d => d.id === currentDialect) || {}).label;
+  document.getElementById('modal-text').value = generateSQL(currentDialect);
+  modalFilename = 'modelo.sql';
+  modal._mime = 'text/plain;charset=utf-8';
+  modal.hidden = false;
+}
+document.getElementById('modal-close').addEventListener('click', () => modal.hidden = true);
+modal.addEventListener('mousedown', ev => { if (ev.target === modal) modal.hidden = true; });
+document.getElementById('modal-copy').addEventListener('click', async () => {
+  const ta = document.getElementById('modal-text');
+  try { await navigator.clipboard.writeText(ta.value); } catch(_){ ta.select(); document.execCommand('copy'); }
+  toast('Copiado', '📋');
+});
+document.getElementById('modal-dl').addEventListener('click', () => {
+  download(modalFilename, document.getElementById('modal-text').value, modal._mime || 'text/plain;charset=utf-8');
+});
+window.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape'){
+    if (!modal.hidden) modal.hidden = true;
+    else if (!refModal.hidden) refModal.hidden = true;
+    else if (!tplModal.hidden) tplModal.hidden = true;
+    else if (!helpModal.hidden) helpModal.hidden = true;
+    else if (!infoModal.hidden) infoModal.hidden = true;
+    else if (!statsModal.hidden) statsModal.hidden = true;
+  }
+});
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+document.querySelectorAll('.tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-redo').addEventListener('click', redo);
+document.getElementById('btn-copy').addEventListener('click', copySelection);
+document.getElementById('btn-paste').addEventListener('click', pasteClipboard);
+document.getElementById('btn-layout').addEventListener('click', autoLayout);
+document.getElementById('btn-export').addEventListener('click', exportJSON);
+document.getElementById('btn-svg').addEventListener('click', exportSVG);
+document.getElementById('btn-png').addEventListener('click', exportPNG);
+document.getElementById('btn-sql').addEventListener('click', openSQL);
+document.getElementById('btn-mermaid').addEventListener('click', exportMermaid);
+document.getElementById('btn-dbml').addEventListener('click', exportDBML);
+document.getElementById('btn-new').addEventListener('click', () => {
+  if (state.entities.length && !confirm('Descartar o modelo atual?')) return;
+  pushHistory();
+  state.entities = []; state.rels = []; state.info = { name:'', author:'', description:'' };
+  selection = null; multiSel.clear(); pendingRelFrom = null; pendingAttrFrom = null;
+  view.x = 0; view.y = 0; view.k = 1;
+  renderAll(); persist();
+});
+document.getElementById('btn-import').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('file-input').addEventListener('change', ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.entities)) throw new Error('formato inválido');
+      pushHistory();
+      state.info = data.info || { name:'', author:'', description:'' };
+      state.entities = data.entities.map(e => ({
+        id: e.id || uid(), name: e.name || 'Entidade',
+        x: typeof e.x === 'number' ? e.x : 0, y: typeof e.y === 'number' ? e.y : 0,
+        color: e.color || '#6366f1', type: e.type || 'strong', note: e.note || '',
+        attrs: (e.attrs || []).map(a => ({
+          id: a.id || uid(), name: a.name || 'campo', type: a.type || 'VARCHAR(100)',
+          pk: !!a.pk, fk: !!a.fk, nn: !!a.nn, uq: !!a.uq,
+          refs: Array.isArray(a.refs) ? a.refs.filter(r => r && r.entityId && r.attrId) : []
+        }))
+      }));
+      state.rels = (data.rels || []).map(r => ({
+        id: r.id || uid(), name: r.name || 'relaciona',
+        from: r.from, to: r.to, cardFrom: r.cardFrom || '1', cardTo: r.cardTo || 'N',
+        type: r.type || 'non-identifying'
+      }));
+      selection = null; multiSel.clear();
+      renderAll(); persist();
+      setTimeout(fitToScreen, 50);
+      toast('Modelo carregado', '✓');
+    } catch(err){ alert('Arquivo inválido: ' + err.message); }
+  };
+  reader.readAsText(f);
+  ev.target.value = '';
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init(){
+  try { const t = localStorage.getItem('merder-theme'); if (t) theme = t; } catch(_){}
+  document.documentElement.setAttribute('data-theme', theme);
+  const saved = localStorage.getItem('merder-state');
+  let loaded = false;
+  if (saved){
+    try {
+      const d = JSON.parse(saved);
+      if (d && Array.isArray(d.entities) && d.entities.length){
+        state.info = d.info || { name:'', author:'', description:'' };
+        state.entities = d.entities.map(e => ({
+          ...e,
+          attrs: (e.attrs || []).map(a => ({ ...a, refs: Array.isArray(a.refs) ? a.refs : [] }))
+        }));
+        state.rels = Array.isArray(d.rels) ? d.rels : [];
+        loaded = true;
+      }
+    } catch(_){}
+  }
+  if (!loaded){
+    const t = TEMPLATES.find(x => x.id === 'barbearia');
+    if (t){ const b = t.build(); state.entities = b.entities; state.rels = b.rels; }
+  }
+  setTool('select');
+  renderAll();
+  setTimeout(fitToScreen, 80);
+  let rT = null;
+  window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(applyView, 100); });
+  setTimeout(() => showHint('💡 Cada atributo pode ter seus próprios vínculos (🔗) que viram linhas individuais', 6000), 500);
+})();
+</script>
+</body>
+</html>
